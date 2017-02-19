@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 use utils::copy_memory;
 
 pub struct SymmetricState<C, H> {
+    // Instead of `has_key`, use an `Option`.
     cipherstate: Option<CipherState<C>>,
     // Doesn't actually need an H.
     hasher: PhantomData<*const H>,
@@ -19,6 +20,7 @@ impl<C, H> SymmetricState<C, H>
     where C: Cipher,
           H: Hash
 {
+    /// Initialize a `SymmetricState` with a handshake name.
     pub fn new(handshake_name: &[u8]) -> SymmetricState<C, H> {
         let mut h = vec![0u8; H::hash_len()];
 

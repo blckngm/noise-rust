@@ -10,6 +10,7 @@ pub enum Token {
 
 use self::Token::*;
 
+/// Noise handshake pattern.
 pub struct HandshakePattern {
     pre_i: Vec<Token>,
     pre_r: Vec<Token>,
@@ -37,6 +38,7 @@ impl HandshakePattern {
 
 // TODO more patterns.
 
+/// The Noise_IK pattern.
 pub fn noise_ik() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![],

@@ -1,3 +1,4 @@
+/// Random number generator.
 pub trait RandomGen {
     fn fill_bytes(&mut self, out: &mut [u8]);
 }
@@ -28,6 +29,7 @@ pub trait DH {
     }
 }
 
+/// Represents a secret key for some AEAD.
 pub trait Cipher {
     fn name() -> &'static str;
     fn key_len() -> usize;
@@ -40,6 +42,7 @@ pub trait Cipher {
     fn decrypt(&self, nonce: u64, ad: &[u8], ciphertext: &[u8], out: &mut [u8]) -> bool;
 }
 
+/// A hash function.
 pub trait Hash: Default {
     fn name() -> &'static str;
     fn block_len() -> usize;

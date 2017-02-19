@@ -6,6 +6,11 @@ use symmetricstate::SymmetricState;
 
 // TODO support PSK.
 
+/// Noise handshake state.
+///
+/// Typically, you call `HandshakeState::new()` to initialize a `HandshakeState`, then call
+/// `write_message` and `read_message` to complete the handshake. Once the handshake is `completed`,
+/// you call `get_ciphers` to get ciphers that can be used to encrypt/decrypt futhur messages.
 pub struct HandshakeState<D, C, H> {
     symmetric: SymmetricState<C, H>,
     s: Option<D>,
@@ -31,6 +36,7 @@ impl<D, C, H> HandshakeState<D, C, H>
                 H::name())
     }
 
+    /// Initialize a handshake state.
     pub fn new(pattern: HandshakePattern,
                is_initiator: bool,
                prologue: &[u8],
@@ -82,6 +88,7 @@ impl<D, C, H> HandshakeState<D, C, H>
         }
     }
 
+    /// Takes a payload and return a packet that you should send to the peer.
     pub fn write_message(&mut self, payload: &[u8]) -> Vec<u8> {
         // Check that it is our turn to send.
         assert!(self.message_index % 2 == if self.is_initiator { 0 } else { 1 });
@@ -118,6 +125,10 @@ impl<D, C, H> HandshakeState<D, C, H>
         out
     }
 
+    /// Update handshake state and get payload, given a packet.
+    ///
+    /// If the packet fails to decrypt, the whole HandshakeState may be in invalid state, and
+    /// should not be used any more.
     pub fn read_message(&mut self, data: &[u8]) -> Result<Vec<u8>> {
         // Check that it is our turn to recv.
         assert!(self.message_index % 2 == if self.is_initiator { 1 } else { 0 });
@@ -162,14 +173,23 @@ impl<D, C, H> HandshakeState<D, C, H>
         self.symmetric.decrypt_and_hash_vec(data).ok_or_else(|| NoiseError::DecryptionFailed)
     }
 
+    /// Whether handshake has completed.
     pub fn completed(&self) -> bool {
         self.message_index == self.pattern.get_message_patterns().len()
     }
 
+    /// Get handshake hash. Useful for e.g., channel binding.
+    ///
+    /// Should be called after handshake is `completed()`.
     pub fn get_hash(&self) -> &[u8] {
         self.symmetric.get_hash()
     }
 
+    /// Get ciphers that can be used to encrypt/decrypt furthur messages.
+    /// The first `CiperState` is for initiator to responder, and the second for responder
+    /// to initiator.
+    ///
+    /// Should be called after handshake is `completed()`.
     pub fn get_ciphers(&self) -> (CipherState<C>, CipherState<C>) {
         self.symmetric.split()
     }

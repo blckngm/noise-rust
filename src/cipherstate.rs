@@ -1,6 +1,8 @@
 use crypto_types::Cipher;
 
-/// Like `CipherState` in the spec, but must be created with a key.
+/// A `CipherState` can encrypt and decrypt data. It keeps a secret key and a nonce.
+///
+/// Mostly like `CipherState` in the spec, but must be created with a key.
 pub struct CipherState<C> {
     cipher: C,
     n: u64,

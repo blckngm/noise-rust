@@ -1,5 +1,6 @@
 use std::fmt::{self, Display, Formatter};
 
+/// Noise error type.
 #[derive(Debug)]
 pub enum NoiseError {
     TooShort,
