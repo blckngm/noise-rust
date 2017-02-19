@@ -1,327 +1,206 @@
+use cipherstate::CipherState;
+use crypto_types::{DH, Cipher, Hash};
+use error::{NoiseError, Result};
+use handshakepattern::{Token, HandshakePattern};
+use symmetricstate::SymmetricState;
 
-use constants::*;
-use utils::*;
-use crypto_types::*;
-use cipherstate::*;
-use symmetricstate::*;
-use patterns::*;
-use handshakecryptoowner::*;
+// TODO support PSK.
 
-#[derive(Debug)]
-pub enum NoiseError {DecryptError}
-
-pub struct HandshakeState<'a> {
-    rng : &'a mut RandomType,                    /* for generating ephemerals */
-    symmetricstate : SymmetricState<'a>,         /* for handshaking */
-    cipherstate1: &'a mut CipherStateType,       /* for I->R transport msgs */
-    cipherstate2: &'a mut CipherStateType,       /* for I<-R transport msgs */ 
-    s: &'a DhType,
-    e: &'a mut DhType,
-    rs: &'a mut [u8],
-    re: &'a mut [u8],
-    has_s: bool,
-    has_e: bool,
-    has_rs: bool,
-    has_re: bool,
-    my_turn_to_send : bool,
-    message_patterns : [[Token; 10]; 10],
+pub struct HandshakeState<D, C, H> {
+    symmetric: SymmetricState<C, H>,
+    s: Option<D>,
+    e: Option<D>,
+    rs: Option<Vec<u8>>,
+    re: Option<Vec<u8>>,
+    is_initiator: bool,
+    pattern: HandshakePattern,
     message_index: usize,
 }
 
-impl<'a> HandshakeState<'a> {
-
-    pub fn new_from_owner<R: RandomType + Default, 
-                          D: DhType + Default, 
-                          C: CipherType + Default, 
-                          H: HashType + Default> 
-                         (owner: &'a mut HandshakeCryptoOwner<R, D, C, H>,
-                          initiator: bool,
-                          handshake_pattern: HandshakePattern,
-                          prologue: &[u8],
-                          optional_preshared_key: Option<&[u8]>,
-                          cipherstate1: &'a mut CipherStateType,
-                          cipherstate2: &'a mut CipherStateType) -> HandshakeState<'a> {
-
-        let dhlen = owner.s.pub_len();
-        HandshakeState::<'a>::new(
-            &mut owner.rng,
-            &mut owner.cipherstate,
-            &mut owner.hasher,
-            &mut owner.s, &mut owner.e, 
-            &mut owner.rs[..dhlen], 
-            &mut owner.re[..dhlen],
-            owner.has_s, owner.has_e, owner.has_rs, owner.has_re,
-            initiator, handshake_pattern, prologue, optional_preshared_key,
-            cipherstate1, cipherstate2)
+impl<D, C, H> HandshakeState<D, C, H>
+    where D: DH,
+          C: Cipher,
+          H: Hash
+{
+    /// Get protocol name, e.g. Noise_IK_25519_ChaChaPoly_BLAKE2s.
+    pub fn get_name(pattern: &HandshakePattern) -> String {
+        format!("Noise_{}_{}_{}_{}",
+                pattern.get_name(),
+                D::name(),
+                C::name(),
+                H::name())
     }
 
-    pub fn new(rng: &'a mut RandomType,
-               cipherstate: &'a mut CipherStateType,
-               hasher: &'a mut HashType,
-               s : &'a DhType, 
-               e : &'a mut DhType, 
-               rs: &'a mut [u8],
-               re: &'a mut [u8],
-               has_s: bool,
-               has_e: bool,
-               has_rs: bool,
-               has_re: bool,
-               initiator: bool,
-               handshake_pattern: HandshakePattern,
+    pub fn new(pattern: HandshakePattern,
+               is_initiator: bool,
                prologue: &[u8],
-               optional_preshared_key: Option<&[u8]>,
-               cipherstate1: &'a mut CipherStateType,
-               cipherstate2: &'a mut CipherStateType) -> HandshakeState<'a> {
-        let mut handshake_name = [0u8; 128];
-        let mut name_len: usize;
-        let mut premsg_pattern_i = [Token::Empty; 2];
-        let mut premsg_pattern_r = [Token::Empty; 2];
-        let mut message_patterns = [[Token::Empty; 10]; 10];
+               s: Option<D>,
+               e: Option<D>,
+               rs: Option<Vec<u8>>,
+               re: Option<Vec<u8>>)
+               -> Self {
+        let mut symmetric = SymmetricState::new(Self::get_name(&pattern).as_bytes());
 
-        // Check that trait objects are pointing to consistent types
-        // (same cipher, same DH) by looking at names
-        {
-            let mut test_name1 = [0u8; 32];
-            let mut test_name2 = [0u8; 32];
+        // Mix in prologue.
+        symmetric.mix_hash(prologue);
 
-            assert!(cipherstate.name(&mut test_name1) < 32);
-            cipherstate1.name(&mut test_name2);
-            assert!(test_name1 == test_name2);
-            cipherstate2.name(&mut test_name2);
-            assert!(test_name1 == test_name2);
-
-            test_name1 = [0u8; 32];
-            test_name2 = [0u8; 32];
-            assert!(s.name(&mut test_name1) < 32);
-            e.name(&mut test_name2);
-            assert!(test_name1 == test_name2);
-        }
-
-        // Check that public keys are the right length 
-        {
-            assert!(s.pub_len() == e.pub_len());
-            assert!(s.pub_len() <= rs.len());
-            assert!(s.pub_len() <= re.len());
-        }
-
-        if let Some(_) = optional_preshared_key {
-            copy_memory("NoisePSK_".as_bytes(), &mut handshake_name);
-            name_len = 9;
-        } else {
-            copy_memory("Noise_".as_bytes(), &mut handshake_name);
-            name_len = 6;
-        }
-        name_len += resolve_handshake_pattern(handshake_pattern,
-                                              &mut handshake_name[name_len..],
-                                              &mut premsg_pattern_i, 
-                                              &mut premsg_pattern_r, 
-                                              &mut message_patterns);
-        handshake_name[name_len] = '_' as u8;
-        name_len += 1;
-        name_len += s.name(&mut handshake_name[name_len..]);
-        handshake_name[name_len] = '_' as u8;
-        name_len += 1;
-        name_len += cipherstate.name(&mut handshake_name[name_len..]);
-        handshake_name[name_len] = '_' as u8;
-        name_len += 1;
-        name_len += hasher.name(&mut handshake_name[name_len..]);
-
-        let mut symmetricstate = SymmetricState::new(cipherstate, hasher);
-        symmetricstate.initialize(&handshake_name[..name_len]); 
-        symmetricstate.mix_hash(prologue);
-
-        if let Some(preshared_key) = optional_preshared_key { 
-            symmetricstate.mix_preshared_key(preshared_key);
-        }
-
-        if initiator {
-            for token in &premsg_pattern_i {
-                match *token {
-                    Token::S => {assert!(has_s); symmetricstate.mix_hash(s.pubkey());},
-                    Token::E => {assert!(has_e); symmetricstate.mix_hash(e.pubkey());},
-                    Token::Empty => break,
-                    _ => unreachable!()
-                }
-            }
-            for token in &premsg_pattern_r {
-                match *token {
-                    Token::S => {assert!(has_rs); symmetricstate.mix_hash(rs);},
-                    Token::E => {assert!(has_re); symmetricstate.mix_hash(re);},
-                    Token::Empty => break,
-                    _ => unreachable!()
-                }
-            }
-        } else {
-            for token in &premsg_pattern_i {
-                match *token {
-                    Token::S => {assert!(has_rs); symmetricstate.mix_hash(rs);},
-                    Token::E => {assert!(has_re); symmetricstate.mix_hash(re);},
-                    Token::Empty => break,
-                    _ => unreachable!()
-                }
-            }
-            for token in &premsg_pattern_r {
-                match *token {
-                    Token::S => {assert!(has_s); symmetricstate.mix_hash(s.pubkey());},
-                    Token::E => {assert!(has_e); symmetricstate.mix_hash(e.pubkey());},
-                    Token::Empty => break,
-                    _ => unreachable!()
-                }
-            }
-        }
-
-        HandshakeState{
-            rng: rng,  
-            symmetricstate: symmetricstate,
-            cipherstate1: cipherstate1,
-            cipherstate2: cipherstate2,
-            s: s, 
-            e: e, 
-            rs: rs, 
-            re: re, 
-            has_s: has_s, 
-            has_e: has_e,
-            has_rs: has_rs, 
-            has_re: has_re,
-            my_turn_to_send: initiator,
-            message_patterns: message_patterns, 
-            message_index: 0, 
-            }
-    }
-
-    fn dh_len(&self) -> usize {
-        self.s.pub_len()
-    }
-
-    fn dh(&mut self, local_s: bool, remote_s: bool) {
-        assert!(!local_s || self.has_s);
-        assert!(local_s || self.has_e);
-        assert!(!remote_s || self.has_rs);
-        assert!(remote_s || self.has_re);
-
-        let dh_len = self.dh_len();
-        let mut dh_out = [0u8; MAXDHLEN];
-        if local_s && remote_s {
-            self.s.dh(self.rs, &mut dh_out);
-        }
-        if local_s && !remote_s {
-            self.s.dh(self.re, &mut dh_out);
-        }
-        if !local_s && remote_s {
-            self.e.dh(self.rs, &mut dh_out);
-        }
-        if !local_s && !remote_s {
-            self.e.dh(self.re, &mut dh_out);
-        }
-        self.symmetricstate.mix_key(&dh_out[..dh_len]);
-    }
-
-    pub fn write_message(&mut self, 
-                         payload: &[u8], 
-                         message: &mut [u8]) -> (usize, bool) { 
-        assert!(self.my_turn_to_send);
-        let tokens = self.message_patterns[self.message_index];
-        let mut last = false;
-        if let Token::Empty = self.message_patterns[self.message_index+1][0] {
-            last = true;
-        }
-        self.message_index += 1;
-
-        let mut byte_index = 0;
-        for token in &tokens {
-            match *token {
-                Token::E => {
-                    self.e.generate(self.rng); 
-                    let pubkey = self.e.pubkey();
-                    copy_memory(pubkey, &mut message[byte_index..]);
-                    byte_index += self.s.pub_len();
-                    self.symmetricstate.mix_hash(&pubkey);
-                    if self.symmetricstate.has_preshared_key() {
-                        self.symmetricstate.mix_key(&pubkey);
-                    }
-                    self.has_e = true;
-                },
+        // Mix in static keys known ahead of time.
+        for t in pattern.get_pre_i() {
+            match *t {
                 Token::S => {
-                    assert!(self.has_s);
-                    byte_index += self.symmetricstate.encrypt_and_hash(
-                                        &self.s.pubkey(), 
-                                        &mut message[byte_index..]);
-                },
-                Token::Dhee => self.dh(false, false),
-                Token::Dhes => self.dh(false, true),
-                Token::Dhse => self.dh(true, false),
-                Token::Dhss => self.dh(true, true),
-                Token::Empty => break
-            }
-        }
-        self.my_turn_to_send = false;
-        byte_index += self.symmetricstate.encrypt_and_hash(payload, &mut message[byte_index..]);
-        assert!(byte_index <= MAXMSGLEN);
-        if last {
-            self.symmetricstate.split(self.cipherstate1, self.cipherstate2);
-        }
-        (byte_index, last)
-    }
-
-    pub fn read_message(&mut self, 
-                        message: &[u8], 
-                        payload: &mut [u8]) -> Result<(usize, bool), NoiseError> { 
-        assert!(self.my_turn_to_send == false);
-        assert!(message.len() <= MAXMSGLEN);
-
-        let tokens = self.message_patterns[self.message_index];
-        let mut last = false;
-        if let Token::Empty = self.message_patterns[self.message_index+1][0] {
-            last = true;
-        }
-        self.message_index += 1;
-
-        let dh_len = self.dh_len();
-        let mut ptr = message;
-        for token in &tokens {
-            match *token {
-                Token::E => {
-                    copy_memory(&ptr[..dh_len], self.re);
-                    ptr = &ptr[dh_len..];
-                    self.symmetricstate.mix_hash(self.re);
-                    if self.symmetricstate.has_preshared_key() {
-                        self.symmetricstate.mix_key(self.re);
-                    }
-                    self.has_re = true;
-                },
-                Token::S => {
-                    let data = if self.symmetricstate.has_key() {
-                        let temp = &ptr[..dh_len + TAGLEN];
-                        ptr = &ptr[dh_len + TAGLEN..];
-                        temp
+                    if is_initiator {
+                        symmetric.mix_hash(s.as_ref().unwrap().get_pubkey_vec().as_slice());
                     } else {
-                        let temp = &ptr[..dh_len];
-                        ptr = &ptr[dh_len..];
-                        temp
-                    };
-                    if !self.symmetricstate.decrypt_and_hash(data, self.rs) {
-                        return Err(NoiseError::DecryptError);
+                        symmetric.mix_hash(rs.as_ref().unwrap().as_slice());
                     }
-                    self.has_rs = true;
-                },
-                Token::Dhee => self.dh(false, false),
-                Token::Dhes => self.dh(true, false),
-                Token::Dhse => self.dh(false, true),
-                Token::Dhss => self.dh(true, true),
-                Token::Empty => break
+                }
+                _ => panic!("Unexpected token in pre message"),
             }
         }
-        if !self.symmetricstate.decrypt_and_hash(ptr, payload) {
-            return Err(NoiseError::DecryptError);
+        for t in pattern.get_pre_r() {
+            match *t {
+                Token::S => {
+                    if is_initiator {
+                        symmetric.mix_hash(rs.as_ref().unwrap().as_slice());
+                    } else {
+                        symmetric.mix_hash(s.as_ref().unwrap().get_pubkey_vec().as_slice());
+                    }
+                }
+                _ => panic!("Unexpected token in pre message"),
+            }
         }
-        self.my_turn_to_send = true;
-        if last {
-            self.symmetricstate.split(self.cipherstate1, self.cipherstate2);
+
+        HandshakeState {
+            symmetric: symmetric,
+            s: s,
+            e: e,
+            rs: rs,
+            re: re,
+            is_initiator: is_initiator,
+            pattern: pattern,
+            message_index: 0,
         }
-        let payload_len = if self.symmetricstate.has_key() { ptr.len() - TAGLEN } else { ptr.len() };
-        Ok((payload_len, last))
     }
 
+    pub fn write_message(&mut self, payload: &[u8]) -> Vec<u8> {
+        // Check that it is our turn to send.
+        assert!(self.message_index % 2 == if self.is_initiator { 0 } else { 1 });
+
+        // Get the message pattern.
+        // Clone to make the borrow check happy.
+        let m = self.pattern.get_message_patterns()[self.message_index].clone();
+        self.message_index += 1;
+
+        let mut out = Vec::new();
+
+        // Process tokens.
+        for t in m.into_iter() {
+            match t {
+                Token::E => {
+                    // Spec says that we should generate new ephemeral key, but that would make
+                    // testing very difficult.
+                    let e_pk = self.e.as_ref().unwrap().get_pubkey_vec();
+                    self.symmetric.mix_hash(&e_pk);
+                    out.extend_from_slice(&e_pk);
+                }
+                Token::S => {
+                    let encrypted_s = self.symmetric
+                        .encrypt_and_hash_vec(self.s.as_ref().unwrap().get_pubkey_vec().as_slice());
+                    out.extend_from_slice(&encrypted_s);
+                }
+                t => self.perform_dh(t),
+            }
+        }
+
+        let encrypted_payload = self.symmetric.encrypt_and_hash_vec(payload);
+        out.extend_from_slice(&encrypted_payload);
+
+        out
+    }
+
+    pub fn read_message(&mut self, data: &[u8]) -> Result<Vec<u8>> {
+        // Check that it is our turn to recv.
+        assert!(self.message_index % 2 == if self.is_initiator { 1 } else { 0 });
+
+        // Get the message pattern.
+        let m = self.pattern.get_message_patterns()[self.message_index].clone();
+        self.message_index += 1;
+
+        let mut data = data;
+        // Consume the next `n` bytes of data.
+        let mut get = |n| if data.len() >= n {
+            let ret = &data[..n];
+            data = &data[n..];
+            Ok(ret)
+        } else {
+            Err(NoiseError::TooShort)
+        };
+
+        // Process tokens.
+        for t in m.into_iter() {
+            match t {
+                Token::E => {
+                    self.re = Some(get(D::pub_len())?.iter().cloned().collect());
+                    self.symmetric.mix_hash(self.re.as_ref().unwrap().as_slice());
+                }
+                Token::S => {
+                    let temp = get(if self.symmetric.has_key() {
+                        D::pub_len() + 16
+                    } else {
+                        D::pub_len()
+                    })?;
+                    if let Some(rs) = self.symmetric.decrypt_and_hash_vec(temp) {
+                        self.rs = Some(rs);
+                    } else {
+                        return Err(NoiseError::DecryptionFailed);
+                    }
+                }
+                t => self.perform_dh(t),
+            }
+        }
+
+        self.symmetric.decrypt_and_hash_vec(data).ok_or_else(|| NoiseError::DecryptionFailed)
+    }
+
+    pub fn completed(&self) -> bool {
+        self.message_index == self.pattern.get_message_patterns().len()
+    }
+
+    pub fn get_hash(&self) -> &[u8] {
+        self.symmetric.get_hash()
+    }
+
+    pub fn get_ciphers(&self) -> (CipherState<C>, CipherState<C>) {
+        self.symmetric.split()
+    }
+
+    fn perform_dh(&mut self, t: Token) {
+        match t {
+            Token::EE => {
+                let k = self.e.as_ref().unwrap().dh_vec(self.re.as_ref().unwrap().as_slice());
+                self.symmetric.mix_key(&k);
+            }
+            Token::ES => {
+                let k = if self.is_initiator {
+                    self.e.as_ref().unwrap().dh_vec(self.rs.as_ref().unwrap().as_slice())
+                } else {
+                    self.s.as_ref().unwrap().dh_vec(self.re.as_ref().unwrap().as_slice())
+                };
+                self.symmetric.mix_key(&k);
+            }
+            Token::SE => {
+                let k = if self.is_initiator {
+                    self.s.as_ref().unwrap().dh_vec(self.re.as_ref().unwrap().as_slice())
+                } else {
+                    self.e.as_ref().unwrap().dh_vec(self.rs.as_ref().unwrap().as_slice())
+                };
+                self.symmetric.mix_key(&k);
+            }
+            Token::SS => {
+                let k = self.s.as_ref().unwrap().dh_vec(self.rs.as_ref().unwrap().as_slice());
+                self.symmetric.mix_key(&k);
+            }
+            _ => unreachable!(),
+        }
+    }
 }
-
-

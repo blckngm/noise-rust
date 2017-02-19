@@ -1,0 +1,4 @@
+format_strings = true
+force_format_strings = true
+reorder_imports = true
+reorder_imported_items = true

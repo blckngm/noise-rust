@@ -1,70 +1,115 @@
-use utils::*;
-use constants::*;
-
-pub trait RandomType {
+pub trait RandomGen {
     fn fill_bytes(&mut self, out: &mut [u8]);
 }
 
-pub trait DhType {
-    fn name(&self, out: &mut [u8]) -> usize;
-    fn pub_len(&self) -> usize;
+/// Represents a DH private key.
+pub trait DH {
+    fn name() -> &'static str;
+    // Really should be an associated constant!
+    fn pub_len() -> usize;
 
-    fn set(&mut self, privkey: &[u8], pubkey: &[u8]);
-    fn generate(&mut self, rng: &mut RandomType); 
-    fn pubkey(&self) -> &[u8];
+    fn new(privkey: &[u8]) -> Self;
+    fn generate(rng: &mut RandomGen) -> Self;
+
+    fn get_pubkey(&self, out: &mut [u8]);
+
+    fn get_pubkey_vec(&self) -> Vec<u8> {
+        let mut pubkey = vec![0u8; Self::pub_len()];
+        self.get_pubkey(&mut pubkey);
+        pubkey
+    }
+
     fn dh(&self, pubkey: &[u8], out: &mut [u8]);
+
+    fn dh_vec(&self, pubkey: &[u8]) -> Vec<u8> {
+        let mut out = vec![0u8; Self::pub_len()];
+        self.dh(pubkey, &mut out);
+        out
+    }
 }
 
-pub trait CipherType {
-    fn name(&self, out: &mut [u8]) -> usize;
+pub trait Cipher {
+    fn name() -> &'static str;
+    fn key_len() -> usize;
+    fn tag_len() -> usize;
+
+    fn new(key: &[u8]) -> Self;
 
     fn set(&mut self, key: &[u8]);
-    fn encrypt(&self, nonce: u64, authtext: &[u8], plaintext: &[u8], out: &mut[u8]);
-    fn decrypt(&self, nonce: u64, authtext: &[u8], ciphertext: &[u8], out: &mut[u8]) -> bool;
+    fn encrypt(&self, nonce: u64, ad: &[u8], plaintext: &[u8], out: &mut [u8]);
+    fn decrypt(&self, nonce: u64, ad: &[u8], ciphertext: &[u8], out: &mut [u8]) -> bool;
 }
 
-pub trait HashType {
-    fn name(&self, out: &mut [u8]) -> usize;
-    fn block_len(&self) -> usize;
-    fn hash_len(&self) -> usize;
+pub trait Hash: Default {
+    fn name() -> &'static str;
+    fn block_len() -> usize;
+    fn hash_len() -> usize;
 
-    /* These functions operate on internal state:
-     * call reset(), then input() repeatedly, then get result() */
-    fn reset(&mut self);
+    fn reset(&mut self) {
+        *self = Default::default();
+    }
+
     fn input(&mut self, data: &[u8]);
     fn result(&mut self, out: &mut [u8]);
 
-    /* The hmac and hkdf functions modify internal state
-     * but ignore previous state, they're one-shot, static-like functions */
-    fn hmac(&mut self, key: &[u8], data: &[u8], out: &mut [u8]) {
-        assert!(key.len() <= self.block_len());
-        let block_len = self.block_len();
-        let hash_len = self.hash_len();
-        let mut ipad = [0x36u8; MAXBLOCKLEN];
-        let mut opad = [0x5cu8; MAXBLOCKLEN];
+    fn result_vec(&mut self) -> Vec<u8> {
+        let mut out = vec![0u8; Self::hash_len()];
+        self.result(&mut out);
+        out
+    }
+
+    fn hash(data: &[u8], out: &mut [u8]) {
+        let mut h: Self = Default::default();
+        h.input(data);
+        h.result(out);
+    }
+
+    fn hash_vec(data: &[u8]) -> Vec<u8> {
+        let mut h: Self = Default::default();
+        h.input(data);
+        h.result_vec()
+    }
+
+    fn hmac(key: &[u8], data: &[u8], out: &mut [u8]) {
+        assert!(key.len() <= Self::block_len());
+        let block_len = Self::block_len();
+        let mut ipad = vec![0x36u8; Self::block_len()];
+        let mut opad = vec![0x5cu8; Self::block_len()];
         for count in 0..key.len() {
             ipad[count] ^= key[count];
             opad[count] ^= key[count];
         }
-        self.reset();
-        self.input(&ipad[..block_len]);
-        self.input(data);
-        let mut inner_output = [0u8; MAXHASHLEN];
-        self.result(&mut inner_output);
-        self.reset();
-        self.input(&opad[..block_len]);
-        self.input(&inner_output[..hash_len]);
-        self.result(out);
+
+        let mut hasher: Self = Default::default();
+        hasher.input(&ipad[..block_len]);
+        hasher.input(data);
+        let inner_output = hasher.result_vec();
+
+        hasher.reset();
+        hasher.input(&opad[..block_len]);
+        hasher.input(&inner_output);
+        hasher.result(out);
     }
 
-    fn hkdf(&mut self, chaining_key: &[u8], input_key_material: &[u8], out1: &mut [u8], out2: & mut[u8]) {
-        let hash_len = self.hash_len();
-        let mut temp_key = [0u8; MAXHASHLEN];
-        let mut in2 = [0u8; MAXHASHLEN+1];
-        self.hmac(chaining_key, input_key_material, &mut temp_key);
-        self.hmac(&temp_key, &[1u8], out1);
-        copy_memory(&out1[0..hash_len], &mut in2);
-        in2[hash_len] = 2;
-        self.hmac(&temp_key, &in2[..hash_len+1], out2);
+    fn hmac_vec(key: &[u8], data: &[u8]) -> Vec<u8> {
+        let mut out = vec![0u8; Self::hash_len()];
+        Self::hmac(key, data, &mut out);
+        out
+    }
+
+    fn hkdf(chaining_key: &[u8], input_key_material: &[u8], out1: &mut [u8], out2: &mut [u8]) {
+        let temp_key = Self::hmac_vec(chaining_key, input_key_material);
+        let mut in2 = Self::hmac_vec(&temp_key, &[1u8]);
+        out1.copy_from_slice(&in2);
+        in2.push(2);
+        Self::hmac(&temp_key, &in2, out2);
+    }
+
+    fn hkdf_vec(chaining_key: &[u8], input_key_material: &[u8]) -> (Vec<u8>, Vec<u8>) {
+        let mut k1 = vec![0u8; Self::hash_len()];
+        let mut k2 = vec![0u8; Self::hash_len()];
+
+        Self::hkdf(chaining_key, input_key_material, &mut k1, &mut k2);
+        (k1, k2)
     }
 }
