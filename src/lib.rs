@@ -1,7 +1,6 @@
 mod crypto_types;
 mod wrappers;
 mod constants;
-mod utils;
 mod cipherstate;
 mod symmetricstate;
 mod handshakestate;

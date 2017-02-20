@@ -112,6 +112,8 @@ impl Cipher for Aes256Gcm {
     }
 
     fn encrypt(&self, nonce: u64, authtext: &[u8], plaintext: &[u8], out: &mut [u8]) {
+        assert_eq!(plaintext.len() + 16, out.len());
+
         let mut nonce_bytes = [0u8; 12];
         BigEndian::write_u64(&mut nonce_bytes[4..], nonce);
         let mut cipher = AesGcm::new(KeySize::KeySize256, &self.key, &nonce_bytes, authtext);
@@ -163,6 +165,8 @@ impl Cipher for ChaCha20Poly1305 {
     }
 
     fn encrypt(&self, nonce: u64, authtext: &[u8], plaintext: &[u8], out: &mut [u8]) {
+        assert_eq!(plaintext.len() + 16, out.len());
+
         let mut nonce_bytes = [0u8; 8];
         LittleEndian::write_u64(&mut nonce_bytes, nonce);
 

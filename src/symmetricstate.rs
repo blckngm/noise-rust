@@ -2,8 +2,6 @@ use cipherstate::CipherState;
 use crypto_types::{Cipher, Hash};
 use std::marker::PhantomData;
 
-use utils::copy_memory;
-
 pub struct SymmetricState<C, H> {
     // Instead of `has_key`, use an `Option`.
     cipherstate: Option<CipherState<C>>,
@@ -25,7 +23,7 @@ impl<C, H> SymmetricState<C, H>
         let mut h = vec![0u8; H::hash_len()];
 
         if handshake_name.len() <= H::hash_len() {
-            copy_memory(handshake_name, &mut h);
+            h[..handshake_name.len()].copy_from_slice(handshake_name);
         } else {
             H::hash(handshake_name, &mut h);
         }
@@ -67,22 +65,19 @@ impl<C, H> SymmetricState<C, H>
         self.has_preshared_key
     }
 
-    pub fn encrypt_and_hash(&mut self, plaintext: &[u8], out: &mut [u8]) -> usize {
-        let output_len = if let Some(ref mut c) = self.cipherstate {
+    pub fn encrypt_and_hash(&mut self, plaintext: &[u8], out: &mut [u8]) {
+        if let Some(ref mut c) = self.cipherstate {
             c.encrypt_ad(&self.h, plaintext, out);
-            plaintext.len() + C::tag_len()
         } else {
-            copy_memory(plaintext, out)
+            out.copy_from_slice(plaintext);
         };
-        self.mix_hash(&out[..output_len]);
-        output_len
+        self.mix_hash(out);
     }
 
     pub fn encrypt_and_hash_vec(&mut self, plaintext: &[u8]) -> Vec<u8> {
         let mut out =
             vec![0u8; if self.has_key() { plaintext.len() + 16 } else { plaintext.len() } ];
-        let out_len = self.encrypt_and_hash(plaintext, &mut out);
-        assert_eq!(out.len(), out_len);
+        self.encrypt_and_hash(plaintext, &mut out);
         out
     }
 
@@ -90,7 +85,7 @@ impl<C, H> SymmetricState<C, H>
         if let Some(ref mut c) = self.cipherstate {
             c.decrypt_ad(&self.h, data, out)?;
         } else {
-            copy_memory(data, out);
+            out.copy_from_slice(data)
         }
         self.mix_hash(data);
         Ok(())
