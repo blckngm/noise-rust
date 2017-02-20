@@ -28,12 +28,14 @@ impl<C> CipherState<C>
         self.n = self.n.checked_add(1).unwrap();
     }
 
-    pub fn decrypt_ad(&mut self, authtext: &[u8], ciphertext: &[u8], out: &mut [u8]) -> bool {
-        let result = self.cipher.decrypt(self.n, authtext, ciphertext, out);
-        if result {
-            self.n = self.n.checked_add(1).unwrap();
-        }
-        result
+    pub fn decrypt_ad(&mut self,
+                      authtext: &[u8],
+                      ciphertext: &[u8],
+                      out: &mut [u8])
+                      -> Result<(), ()> {
+        self.cipher.decrypt(self.n, authtext, ciphertext, out)?;
+        self.n = self.n.checked_add(1).unwrap();
+        Ok(())
     }
 
     pub fn encrypt(&mut self, plaintext: &[u8], out: &mut [u8]) {
@@ -46,17 +48,14 @@ impl<C> CipherState<C>
         out
     }
 
-    pub fn decrypt(&mut self, ciphertext: &[u8], out: &mut [u8]) -> bool {
+    pub fn decrypt(&mut self, ciphertext: &[u8], out: &mut [u8]) -> Result<(), ()> {
         self.decrypt_ad(&[0u8; 0], ciphertext, out)
     }
 
-    pub fn decrypt_vec(&mut self, ciphertext: &[u8]) -> Option<Vec<u8>> {
+    pub fn decrypt_vec(&mut self, ciphertext: &[u8]) -> Result<Vec<u8>, ()> {
         let mut out = vec![0u8; ciphertext.len() - 16];
-        if self.decrypt(ciphertext, &mut out) {
-            Some(out)
-        } else {
-            None
-        }
+        self.decrypt(ciphertext, &mut out)?;
+        Ok(out)
     }
 
     /// Get underlying cipher.

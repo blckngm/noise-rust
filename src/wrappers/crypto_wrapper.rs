@@ -119,14 +119,23 @@ impl Cipher for Aes256Gcm {
         cipher.encrypt(plaintext, c, t);
     }
 
-    fn decrypt(&self, nonce: u64, authtext: &[u8], ciphertext: &[u8], out: &mut [u8]) -> bool {
+    fn decrypt(&self,
+               nonce: u64,
+               authtext: &[u8],
+               ciphertext: &[u8],
+               out: &mut [u8])
+               -> Result<(), ()> {
         let mut nonce_bytes = [0u8; 12];
         BigEndian::write_u64(&mut nonce_bytes[4..], nonce);
         let mut cipher = AesGcm::new(KeySize::KeySize256, &self.key, &nonce_bytes, authtext);
         let text_len = ciphertext.len() - 16;
-        cipher.decrypt(&ciphertext[..text_len],
-                       &mut out[..text_len],
-                       &ciphertext[text_len..])
+        if cipher.decrypt(&ciphertext[..text_len],
+                          &mut out[..text_len],
+                          &ciphertext[text_len..]) {
+            Ok(())
+        } else {
+            Err(())
+        }
     }
 }
 
@@ -176,7 +185,12 @@ impl Cipher for ChaCha20Poly1305 {
         poly.raw_result(&mut out[plaintext.len()..]);
     }
 
-    fn decrypt(&self, nonce: u64, authtext: &[u8], ciphertext: &[u8], out: &mut [u8]) -> bool {
+    fn decrypt(&self,
+               nonce: u64,
+               authtext: &[u8],
+               ciphertext: &[u8],
+               out: &mut [u8])
+               -> Result<(), ()> {
         let mut nonce_bytes = [0u8; 8];
         LittleEndian::write_u64(&mut nonce_bytes, nonce);
 
@@ -199,10 +213,10 @@ impl Cipher for ChaCha20Poly1305 {
         let mut tag = [0u8; 16];
         poly.raw_result(&mut tag);
         if !fixed_time_eq(&tag, &ciphertext[text_len..]) {
-            return false;
+            return Err(());
         }
         cipher.process(&ciphertext[..text_len], &mut out[..text_len]);
-        true
+        Ok(())
     }
 }
 
@@ -410,10 +424,10 @@ mod tests {
 
         let mut resulttext = [0u8; 1];
         let cipher2 = Aes256Gcm::new(&key);
-        assert!(cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext));
+        assert!(cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext).is_ok());
         assert_eq!(resulttext[0], 0);
         ciphertext[0] ^= 1;
-        assert!(!cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext));
+        assert!(cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext).is_err());
 
         // Test Case 14
         let plaintext2 = [0u8; 16];
@@ -425,10 +439,10 @@ mod tests {
 
         let mut resulttext2 = [1u8; 16];
         let cipher4 = Aes256Gcm::new(&key);
-        assert!(cipher4.decrypt(nonce, &authtext, &ciphertext2, &mut resulttext2));
+        assert!(cipher4.decrypt(nonce, &authtext, &ciphertext2, &mut resulttext2).is_ok());
         assert!(plaintext2 == resulttext2);
         ciphertext2[0] ^= 1;
-        assert!(!cipher4.decrypt(nonce, &authtext, &ciphertext2, &mut resulttext2));
+        assert!(cipher4.decrypt(nonce, &authtext, &ciphertext2, &mut resulttext2).is_err());
     }
 
     #[test]
@@ -460,10 +474,10 @@ mod tests {
 
         let mut resulttext = [0u8; 1];
         let cipher2 = ChaCha20Poly1305::new(&key);
-        assert!(cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext));
+        assert!(cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext).is_ok());
         assert_eq!(resulttext[0], 0);
         ciphertext[0] ^= 1;
-        assert!(!cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext));
+        assert!(cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext).is_err());
 
         // Non-empty plaintext.
 
@@ -477,7 +491,7 @@ mod tests {
 
         let mut resulttext = [0u8; 117];
         let cipher2 = ChaCha20Poly1305::new(&key);
-        assert!(cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext));
+        assert!(cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext).is_ok());
         assert_eq!(resulttext.to_hex(), plaintext.to_hex());
     }
 
@@ -516,9 +530,10 @@ mod tests {
 
         let cipher = ChaCha20Poly1305::new(&key);
         assert!(cipher.decrypt(nonce,
-                               &authtext,
-                               &combined_text[..ciphertext.len() + 16],
-                               &mut out[..ciphertext.len()]));
+                     &authtext,
+                     &combined_text[..ciphertext.len() + 16],
+                     &mut out[..ciphertext.len()])
+            .is_ok());
         let desired_plaintext = "496e7465726e65742d44726166747320\
                                  61726520647261667420646f63756d65\
                                  6e74732076616c696420666f72206120\

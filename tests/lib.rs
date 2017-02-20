@@ -91,7 +91,7 @@ fn noise_ik_vectors() {
         assert_eq!(ciphertext.to_hex(),
                    "2c256ed08fcd08c2980f954ee4beaccb61c9581340f5dd2fd1cf3b");
         let payload1 = r_recv.decrypt_vec(&ciphertext);
-        assert_eq!(payload1, Some(payload));
+        assert_eq!(payload1.unwrap(), payload);
     }
 
     {
@@ -100,7 +100,7 @@ fn noise_ik_vectors() {
         assert_eq!(ciphertext.to_hex(),
                    "d6033f70eee20945c7c9dba304e397ee3b284ff5e00fd9efb095d3");
         let payload1 = i_recv.decrypt_vec(&ciphertext);
-        assert_eq!(payload1, Some(payload));
+        assert_eq!(payload1.unwrap(), payload);
     }
 
     {
@@ -109,7 +109,7 @@ fn noise_ik_vectors() {
         assert_eq!(ciphertext.to_hex(),
                    "a9c068ca5d8babf72560652d8e851adbfac35c8a66e810d560863173e96adf4cfe");
         let payload1 = r_recv.decrypt_vec(&ciphertext);
-        assert_eq!(payload1, Some(payload));
+        assert_eq!(payload1.unwrap(), payload);
     }
 
     {
@@ -118,6 +118,6 @@ fn noise_ik_vectors() {
         assert_eq!(ciphertext.to_hex(),
                    "2a09d8f459e5927e40fdd2eddc99bdafb04e13a26f145cb5cfe9e6ba34c94331ebc17d5156");
         let payload1 = i_recv.decrypt_vec(&ciphertext);
-        assert_eq!(payload1, Some(payload));
+        assert_eq!(payload1.unwrap(), payload);
     }
 }

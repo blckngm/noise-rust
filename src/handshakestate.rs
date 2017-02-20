@@ -176,17 +176,13 @@ impl<D, C, H> HandshakeState<D, C, H>
                     } else {
                         D::pub_len()
                     })?;
-                    if let Some(rs) = self.symmetric.decrypt_and_hash_vec(temp) {
-                        self.rs = Some(rs);
-                    } else {
-                        return Err(NoiseError::DecryptionFailed);
-                    }
+                    self.rs = Some(self.symmetric.decrypt_and_hash_vec(temp)?);
                 }
                 t => self.perform_dh(t),
             }
         }
 
-        self.symmetric.decrypt_and_hash_vec(data).ok_or_else(|| NoiseError::DecryptionFailed)
+        Ok(self.symmetric.decrypt_and_hash_vec(data)?)
     }
 
     /// Whether handshake has completed.

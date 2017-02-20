@@ -7,6 +7,12 @@ pub enum NoiseError {
     DecryptionFailed,
 }
 
+impl From<()> for NoiseError {
+    fn from(_: ()) -> Self {
+        NoiseError::DecryptionFailed
+    }
+}
+
 impl Display for NoiseError {
     fn fmt(&self, f: &mut Formatter) -> ::std::result::Result<(), fmt::Error> {
         match *self {

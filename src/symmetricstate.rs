@@ -86,25 +86,20 @@ impl<C, H> SymmetricState<C, H>
         out
     }
 
-    pub fn decrypt_and_hash(&mut self, data: &[u8], out: &mut [u8]) -> bool {
+    pub fn decrypt_and_hash(&mut self, data: &[u8], out: &mut [u8]) -> Result<(), ()> {
         if let Some(ref mut c) = self.cipherstate {
-            if !c.decrypt_ad(&self.h, data, out) {
-                return false;
-            }
+            c.decrypt_ad(&self.h, data, out)?;
         } else {
             copy_memory(data, out);
         }
         self.mix_hash(data);
-        true
+        Ok(())
     }
 
-    pub fn decrypt_and_hash_vec(&mut self, data: &[u8]) -> Option<Vec<u8>> {
+    pub fn decrypt_and_hash_vec(&mut self, data: &[u8]) -> Result<Vec<u8>, ()> {
         let mut out = vec![0u8; if self.has_key() { data.len() - 16 } else { data.len() } ];
-        if self.decrypt_and_hash(data, &mut out) {
-            Some(out)
-        } else {
-            None
-        }
+        self.decrypt_and_hash(data, &mut out)?;
+        Ok(out)
     }
 
     pub fn split(&self) -> (CipherState<C>, CipherState<C>) {

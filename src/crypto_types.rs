@@ -39,7 +39,7 @@ pub trait Cipher {
 
     fn set(&mut self, key: &[u8]);
     fn encrypt(&self, nonce: u64, ad: &[u8], plaintext: &[u8], out: &mut [u8]);
-    fn decrypt(&self, nonce: u64, ad: &[u8], ciphertext: &[u8], out: &mut [u8]) -> bool;
+    fn decrypt(&self, nonce: u64, ad: &[u8], ciphertext: &[u8], out: &mut [u8]) -> Result<(), ()>;
 }
 
 /// A hash function.
