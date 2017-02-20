@@ -164,7 +164,7 @@ impl Cipher for ChaCha20Poly1305 {
         cipher.process(plaintext, &mut out[..plaintext.len()]);
 
         let mut poly = Poly1305::new(&poly_key[..32]);
-        poly.input(&authtext);
+        poly.input(authtext);
         let mut padding = [0u8; 16];
         poly.input(&padding[..(16 - (authtext.len() % 16)) % 16]);
         poly.input(&out[..plaintext.len()]);
@@ -188,7 +188,7 @@ impl Cipher for ChaCha20Poly1305 {
         let mut poly = Poly1305::new(&poly_key[..32]);
         let mut padding = [0u8; 15];
         let text_len = ciphertext.len() - 16;
-        poly.input(&authtext);
+        poly.input(authtext);
         poly.input(&padding[..(16 - (authtext.len() % 16)) % 16]);
         poly.input(&ciphertext[..text_len]);
         poly.input(&padding[..(16 - (text_len % 16)) % 16]);
@@ -214,11 +214,11 @@ impl Default for Sha256 {
 
 impl Hash for Sha256 {
     fn block_len() -> usize {
-        return 64;
+        64
     }
 
     fn hash_len() -> usize {
-        return 32;
+        32
     }
 
     fn name() -> &'static str {
@@ -246,11 +246,11 @@ impl Hash for Sha512 {
     }
 
     fn block_len() -> usize {
-        return 128;
+        128
     }
 
     fn hash_len() -> usize {
-        return 64;
+        64
     }
 
     fn input(&mut self, data: &[u8]) {

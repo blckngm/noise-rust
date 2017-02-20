@@ -101,7 +101,7 @@ impl<D, C, H> HandshakeState<D, C, H>
         let mut out = Vec::new();
 
         // Process tokens.
-        for t in m.into_iter() {
+        for t in m {
             match t {
                 Token::E => {
                     // Spec says that we should generate new ephemeral key, but that would make
@@ -148,7 +148,7 @@ impl<D, C, H> HandshakeState<D, C, H>
         };
 
         // Process tokens.
-        for t in m.into_iter() {
+        for t in m {
             match t {
                 Token::E => {
                     self.re = Some(get(D::pub_len())?.iter().cloned().collect());

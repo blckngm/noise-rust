@@ -39,14 +39,6 @@ impl<C, H> SymmetricState<C, H>
         }
     }
 
-    pub fn cipher_name() -> &'static str {
-        C::name()
-    }
-
-    pub fn hash_name() -> &'static str {
-        H::name()
-    }
-
     pub fn mix_key(&mut self, data: &[u8]) {
         let (k1, k2) = H::hkdf_vec(&self.ck, data);
         self.ck = k1;
