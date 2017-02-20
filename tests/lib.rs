@@ -3,6 +3,8 @@ extern crate rustc_serialize;
 
 use self::rustc_serialize::hex::{FromHex, ToHex};
 use noise::*;
+use noise::algorithms::*;
+use noise::patterns::noise_ik;
 
 // TODO verify and generate vectors automatically, like noise-c and cacophony.
 
