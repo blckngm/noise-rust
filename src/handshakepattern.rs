@@ -11,6 +11,7 @@ pub enum Token {
 use self::Token::*;
 
 /// Noise handshake pattern.
+#[derive(Clone)]
 pub struct HandshakePattern {
     pre_i: Vec<Token>,
     pre_r: Vec<Token>,
@@ -38,7 +39,7 @@ impl HandshakePattern {
 
 // TODO more patterns.
 
-/// The Noise_N pattern.
+/// The `Noise_N` pattern.
 pub fn noise_n() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![],
@@ -48,7 +49,7 @@ pub fn noise_n() -> HandshakePattern {
     }
 }
 
-/// The Noise_K pattern.
+/// The `Noise_K` pattern.
 pub fn noise_k() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![S],
@@ -58,7 +59,7 @@ pub fn noise_k() -> HandshakePattern {
     }
 }
 
-/// The Noise_X pattern.
+/// The `Noise_X` pattern.
 pub fn noise_x() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![],
@@ -68,7 +69,7 @@ pub fn noise_x() -> HandshakePattern {
     }
 }
 
-/// The Noise_NN pattern.
+/// The `Noise_NN` pattern.
 pub fn noise_nn() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![],
@@ -78,7 +79,7 @@ pub fn noise_nn() -> HandshakePattern {
     }
 }
 
-/// The Noise_NK pattern.
+/// The `Noise_NK` pattern.
 pub fn noise_nk() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![],
@@ -88,7 +89,7 @@ pub fn noise_nk() -> HandshakePattern {
     }
 }
 
-/// The Noise_NX pattern.
+/// The `Noise_NX` pattern.
 pub fn noise_nx() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![],
@@ -98,7 +99,7 @@ pub fn noise_nx() -> HandshakePattern {
     }
 }
 
-/// The Noise_XN pattern.
+/// The `Noise_XN` pattern.
 pub fn noise_xn() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![],
@@ -108,7 +109,7 @@ pub fn noise_xn() -> HandshakePattern {
     }
 }
 
-/// The Noise_XK pattern.
+/// The `Noise_XK` pattern.
 pub fn noise_xk() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![],
@@ -118,7 +119,7 @@ pub fn noise_xk() -> HandshakePattern {
     }
 }
 
-/// The Noise_XX pattern.
+/// The `Noise_XX` pattern.
 pub fn noise_xx() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![],
@@ -128,7 +129,7 @@ pub fn noise_xx() -> HandshakePattern {
     }
 }
 
-/// The Noise_KN pattern.
+/// The `Noise_KN` pattern.
 pub fn noise_kn() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![S],
@@ -138,7 +139,7 @@ pub fn noise_kn() -> HandshakePattern {
     }
 }
 
-/// The Noise_KK pattern.
+/// The `Noise_KK` pattern.
 pub fn noise_kk() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![S],
@@ -148,7 +149,7 @@ pub fn noise_kk() -> HandshakePattern {
     }
 }
 
-/// The Noise_KX pattern.
+/// The `Noise_KX` pattern.
 pub fn noise_kx() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![S],
@@ -158,7 +159,7 @@ pub fn noise_kx() -> HandshakePattern {
     }
 }
 
-/// The Noise_IN pattern.
+/// The `Noise_IN` pattern.
 pub fn noise_in() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![],
@@ -168,7 +169,7 @@ pub fn noise_in() -> HandshakePattern {
     }
 }
 
-/// The Noise_IK pattern.
+/// The `Noise_IK` pattern.
 pub fn noise_ik() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![],
@@ -178,7 +179,7 @@ pub fn noise_ik() -> HandshakePattern {
     }
 }
 
-/// The Noise_IX pattern.
+/// The `Noise_IX` pattern.
 pub fn noise_ix() -> HandshakePattern {
     HandshakePattern {
         pre_i: vec![],

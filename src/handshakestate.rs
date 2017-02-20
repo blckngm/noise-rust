@@ -41,7 +41,7 @@ impl<D, C, H> HandshakeState<D, C, H>
     pub fn new(pattern: HandshakePattern,
                is_initiator: bool,
                prologue: &[u8],
-               psk: Option<&[u8]>,
+               psk: Option<Vec<u8>>,
                s: Option<D>,
                e: Option<D>,
                rs: Option<Vec<u8>>,
@@ -56,7 +56,7 @@ impl<D, C, H> HandshakeState<D, C, H>
         // Mix in pre-shared key.
         if let Some(psk) = psk {
             assert_eq!(psk.len(), 32);
-            symmetric.mix_preshared_key(psk);
+            symmetric.mix_preshared_key(&psk);
         }
 
         // Mix in static keys known ahead of time.
