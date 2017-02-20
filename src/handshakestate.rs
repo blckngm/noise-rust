@@ -4,8 +4,6 @@ use error::{NoiseError, Result};
 use handshakepattern::{Token, HandshakePattern};
 use symmetricstate::SymmetricState;
 
-// TODO support PSK.
-
 /// Noise handshake state.
 ///
 /// Typically, you call `HandshakeState::new()` to initialize a `HandshakeState`, then call
@@ -28,27 +26,38 @@ impl<D, C, H> HandshakeState<D, C, H>
           H: Hash
 {
     /// Get protocol name, e.g. Noise_IK_25519_ChaChaPoly_BLAKE2s.
-    pub fn get_name(pattern: &HandshakePattern) -> String {
-        format!("Noise_{}_{}_{}_{}",
-                pattern.get_name(),
+    pub fn get_name(has_psk: bool, pattern_name: &str) -> String {
+        format!("Noise{}_{}_{}_{}_{}",
+                if has_psk { "PSK" } else { "" },
+                pattern_name,
                 D::name(),
                 C::name(),
                 H::name())
     }
 
     /// Initialize a handshake state.
+    ///
+    /// `HandshakeState` does not generate a new ephemeral key when seeing a `E` toekn (for now?).
     pub fn new(pattern: HandshakePattern,
                is_initiator: bool,
                prologue: &[u8],
+               psk: Option<&[u8]>,
                s: Option<D>,
                e: Option<D>,
                rs: Option<Vec<u8>>,
                re: Option<Vec<u8>>)
                -> Self {
-        let mut symmetric = SymmetricState::new(Self::get_name(&pattern).as_bytes());
+        let mut symmetric = SymmetricState::new(Self::get_name(psk.is_some(), pattern.get_name())
+            .as_bytes());
 
         // Mix in prologue.
         symmetric.mix_hash(prologue);
+
+        // Mix in pre-shared key.
+        if let Some(psk) = psk {
+            assert_eq!(psk.len(), 32);
+            symmetric.mix_preshared_key(psk);
+        }
 
         // Mix in static keys known ahead of time.
         for t in pattern.get_pre_i() {
@@ -108,6 +117,9 @@ impl<D, C, H> HandshakeState<D, C, H>
                     // testing very difficult.
                     let e_pk = self.e.as_ref().unwrap().get_pubkey_vec();
                     self.symmetric.mix_hash(&e_pk);
+                    if self.symmetric.has_preshared_key() {
+                        self.symmetric.mix_key(&e_pk);
+                    }
                     out.extend_from_slice(&e_pk);
                 }
                 Token::S => {
@@ -151,8 +163,12 @@ impl<D, C, H> HandshakeState<D, C, H>
         for t in m {
             match t {
                 Token::E => {
-                    self.re = Some(get(D::pub_len())?.iter().cloned().collect());
-                    self.symmetric.mix_hash(self.re.as_ref().unwrap().as_slice());
+                    let re: Vec<_> = get(D::pub_len())?.iter().cloned().collect();
+                    self.symmetric.mix_hash(&re);
+                    if self.symmetric.has_preshared_key() {
+                        self.symmetric.mix_key(&re);
+                    }
+                    self.re = Some(re);
                 }
                 Token::S => {
                     let temp = get(if self.symmetric.has_key() {
