@@ -1,21 +1,12 @@
-extern crate crypto;
 extern crate byteorder;
-
+extern crate crypto;
+extern crate ring;
 
 use self::byteorder::{ByteOrder, BigEndian, LittleEndian};
-use self::crypto::aead::{AeadEncryptor, AeadDecryptor};
-use self::crypto::aes::KeySize;
-use self::crypto::aes_gcm::AesGcm;
-use self::crypto::blake2b;
-use self::crypto::blake2s;
-use self::crypto::chacha20::ChaCha20;
+use self::crypto::{blake2b, blake2s, sha2};
 use self::crypto::curve25519::{curve25519, curve25519_base};
 use self::crypto::digest::Digest;
-use self::crypto::mac::Mac;
-use self::crypto::poly1305::Poly1305;
-use self::crypto::sha2;
-use self::crypto::symmetriccipher::SynchronousStreamCipher;
-use self::crypto::util::fixed_time_eq;
+use self::ring::aead;
 
 use crypto_types::{RandomGen, DH, Cipher, Hash};
 
@@ -116,9 +107,11 @@ impl Cipher for Aes256Gcm {
 
         let mut nonce_bytes = [0u8; 12];
         BigEndian::write_u64(&mut nonce_bytes[4..], nonce);
-        let mut cipher = AesGcm::new(KeySize::KeySize256, &self.key, &nonce_bytes, authtext);
-        let (c, t) = out.split_at_mut(plaintext.len());
-        cipher.encrypt(plaintext, c, t);
+
+        out[..plaintext.len()].copy_from_slice(plaintext);
+
+        let key = aead::SealingKey::new(&aead::AES_256_GCM, &self.key).unwrap();
+        aead::seal_in_place(&key, &nonce_bytes, authtext, out, 16).unwrap();
     }
 
     fn decrypt(&self,
@@ -129,15 +122,16 @@ impl Cipher for Aes256Gcm {
                -> Result<(), ()> {
         let mut nonce_bytes = [0u8; 12];
         BigEndian::write_u64(&mut nonce_bytes[4..], nonce);
-        let mut cipher = AesGcm::new(KeySize::KeySize256, &self.key, &nonce_bytes, authtext);
-        let text_len = ciphertext.len() - 16;
-        if cipher.decrypt(&ciphertext[..text_len],
-                          &mut out[..text_len],
-                          &ciphertext[text_len..]) {
-            Ok(())
-        } else {
-            Err(())
-        }
+
+        // Eh, ring API is ... weird.
+        let mut in_out = ciphertext.to_vec();
+
+        let k = aead::OpeningKey::new(&aead::AES_256_GCM, &self.key).unwrap();
+        let out0 = aead::open_in_place(&k, &nonce_bytes, authtext, 0, &mut in_out).map_err(|_| ())?;
+        assert_eq!(out0.len(), out.len());
+
+        out.copy_from_slice(out0);
+        Ok(())
     }
 }
 
@@ -167,26 +161,13 @@ impl Cipher for ChaCha20Poly1305 {
     fn encrypt(&self, nonce: u64, authtext: &[u8], plaintext: &[u8], out: &mut [u8]) {
         assert_eq!(plaintext.len() + 16, out.len());
 
-        let mut nonce_bytes = [0u8; 8];
-        LittleEndian::write_u64(&mut nonce_bytes, nonce);
+        let mut nonce_bytes = [0u8; 12];
+        LittleEndian::write_u64(&mut nonce_bytes[4..], nonce);
 
-        let mut cipher = ChaCha20::new(&self.key, &nonce_bytes);
-        let zeros = [0u8; 64];
-        let mut poly_key = [0u8; 64];
-        cipher.process(&zeros, &mut poly_key);
-        cipher.process(plaintext, &mut out[..plaintext.len()]);
+        out[..plaintext.len()].copy_from_slice(plaintext);
 
-        let mut poly = Poly1305::new(&poly_key[..32]);
-        poly.input(authtext);
-        let mut padding = [0u8; 16];
-        poly.input(&padding[..(16 - (authtext.len() % 16)) % 16]);
-        poly.input(&out[..plaintext.len()]);
-        poly.input(&padding[..(16 - (plaintext.len() % 16)) % 16]);
-        LittleEndian::write_u64(&mut padding, authtext.len() as u64);
-        poly.input(&padding[..8]);
-        LittleEndian::write_u64(&mut padding, plaintext.len() as u64);
-        poly.input(&padding[..8]);
-        poly.raw_result(&mut out[plaintext.len()..]);
+        let k = aead::SealingKey::new(&aead::CHACHA20_POLY1305, &self.key).unwrap();
+        aead::seal_in_place(&k, &nonce_bytes, authtext, out, 16).unwrap();
     }
 
     fn decrypt(&self,
@@ -195,31 +176,17 @@ impl Cipher for ChaCha20Poly1305 {
                ciphertext: &[u8],
                out: &mut [u8])
                -> Result<(), ()> {
-        let mut nonce_bytes = [0u8; 8];
-        LittleEndian::write_u64(&mut nonce_bytes, nonce);
+        assert_eq!(ciphertext.len() - 16, out.len());
 
-        let mut cipher = ChaCha20::new(&self.key, &nonce_bytes);
-        let zeros = [0u8; 64];
-        let mut poly_key = [0u8; 64];
-        cipher.process(&zeros, &mut poly_key);
+        let mut nonce_bytes = [0u8; 12];
+        LittleEndian::write_u64(&mut nonce_bytes[4..], nonce);
 
-        let mut poly = Poly1305::new(&poly_key[..32]);
-        let mut padding = [0u8; 15];
-        let text_len = ciphertext.len() - 16;
-        poly.input(authtext);
-        poly.input(&padding[..(16 - (authtext.len() % 16)) % 16]);
-        poly.input(&ciphertext[..text_len]);
-        poly.input(&padding[..(16 - (text_len % 16)) % 16]);
-        LittleEndian::write_u64(&mut padding, authtext.len() as u64);
-        poly.input(&padding[..8]);
-        LittleEndian::write_u64(&mut padding, text_len as u64);
-        poly.input(&padding[..8]);
-        let mut tag = [0u8; 16];
-        poly.raw_result(&mut tag);
-        if !fixed_time_eq(&tag, &ciphertext[text_len..]) {
-            return Err(());
-        }
-        cipher.process(&ciphertext[..text_len], &mut out[..text_len]);
+        let mut in_out = ciphertext.to_vec();
+
+        let k = aead::OpeningKey::new(&aead::CHACHA20_POLY1305, &self.key).unwrap();
+        let out0 = aead::open_in_place(&k, &nonce_bytes, authtext, 0, &mut in_out).map_err(|_| ())?;
+
+        out.copy_from_slice(out0);
         Ok(())
     }
 }
@@ -426,10 +393,9 @@ mod tests {
         cipher1.encrypt(nonce, &authtext, &plaintext, &mut ciphertext);
         assert_eq!(ciphertext.to_hex(), "530f8afbc74536b9a963b4f1c4cb738b");
 
-        let mut resulttext = [0u8; 1];
+        let mut resulttext = [];
         let cipher2 = Aes256Gcm::new(&key);
         assert!(cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext).is_ok());
-        assert_eq!(resulttext[0], 0);
         ciphertext[0] ^= 1;
         assert!(cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext).is_err());
 
@@ -476,10 +442,9 @@ mod tests {
         let cipher1 = ChaCha20Poly1305::new(&key);
         cipher1.encrypt(nonce, &authtext, &plaintext, &mut ciphertext);
 
-        let mut resulttext = [0u8; 1];
+        let mut resulttext = [];
         let cipher2 = ChaCha20Poly1305::new(&key);
         assert!(cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext).is_ok());
-        assert_eq!(resulttext[0], 0);
         ciphertext[0] ^= 1;
         assert!(cipher2.decrypt(nonce, &authtext, &ciphertext, &mut resulttext).is_err());
 
