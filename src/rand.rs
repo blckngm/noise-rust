@@ -1,7 +1,9 @@
+//! Random number generator.
+
 extern crate rand;
 
 use self::rand::{OsRng, Rng};
-use crypto_types::RandomGen;
+use traits::RandomGen;
 
 /// A random number generator that retrieves randomness straight from the operating system.
 pub struct RandomOS {

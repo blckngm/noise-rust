@@ -8,7 +8,7 @@ extern crate serde_json;
 extern crate serde_derive;
 
 use noise::*;
-use noise::algorithms::*;
+use noise::crypto::*;
 use noise::patterns::*;
 use rustc_serialize::hex::FromHex;
 use serde_json as json;

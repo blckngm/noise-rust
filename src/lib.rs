@@ -10,8 +10,9 @@
 //! You can use other implementations of the various crypto primitives by implementing the `DH`,
 //! `Cipher`, or `Hash` traits.
 
-mod crypto_types;
-mod wrappers;
+mod traits;
+pub mod crypto;
+pub mod rand;
 mod cipherstate;
 mod symmetricstate;
 mod handshakestate;
@@ -19,8 +20,8 @@ mod handshakepattern;
 mod error;
 
 pub use cipherstate::CipherState;
-pub use crypto_types::{RandomGen, DH, Cipher, Hash};
 pub use error::NoiseError;
+pub use traits::{RandomGen, DH, Cipher, Hash};
 
 /// Handshake patterns.
 pub mod patterns {
@@ -28,9 +29,3 @@ pub mod patterns {
 }
 
 pub use handshakestate::HandshakeState;
-
-/// Crypto algorithms.
-pub mod algorithms {
-    pub use wrappers::crypto_wrapper::*;
-    pub use wrappers::rand_wrapper::RandomOS;
-}

@@ -1,4 +1,4 @@
-use crypto_types::Cipher;
+use traits::Cipher;
 
 /// A `CipherState` can encrypt and decrypt data.
 ///

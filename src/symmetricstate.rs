@@ -1,6 +1,6 @@
 use cipherstate::CipherState;
-use crypto_types::{Cipher, Hash};
 use std::marker::PhantomData;
+use traits::{Cipher, Hash};
 
 pub struct SymmetricState<C, H> {
     // Instead of `has_key`, use an `Option`.

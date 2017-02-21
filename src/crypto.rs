@@ -1,3 +1,5 @@
+//! Crypto algorithms.
+
 extern crate byteorder;
 extern crate crypto;
 extern crate ring;
@@ -8,7 +10,7 @@ use self::crypto::curve25519::{curve25519, curve25519_base};
 use self::crypto::digest::Digest;
 use self::ring::aead;
 
-use crypto_types::{RandomGen, DH, Cipher, Hash};
+use traits::{RandomGen, DH, Cipher, Hash};
 
 // TODO zero out secrets in `Drop`.
 
@@ -312,7 +314,7 @@ mod tests {
     use super::*;
     use super::crypto::mac::Mac;
     use super::crypto::poly1305::Poly1305;
-    use crypto_types::{DH, Cipher, Hash};
+    use traits::{DH, Cipher, Hash};
 
     #[test]
     fn sha256() {

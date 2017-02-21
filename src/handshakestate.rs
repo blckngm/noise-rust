@@ -1,8 +1,8 @@
 use cipherstate::CipherState;
-use crypto_types::{DH, Cipher, Hash};
 use error::NoiseError;
 use handshakepattern::{Token, HandshakePattern};
 use symmetricstate::SymmetricState;
+use traits::{DH, Cipher, Hash};
 
 /// Noise handshake state.
 ///
