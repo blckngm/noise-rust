@@ -1,9 +1,9 @@
-/// Random number generator.
+/// A random number generator.
 pub trait RandomGen {
     fn fill_bytes(&mut self, out: &mut [u8]);
 }
 
-/// Represents a DH private key.
+/// A DH.
 pub trait DH {
     fn name() -> &'static str;
     // Really should be an associated constant!
@@ -29,7 +29,7 @@ pub trait DH {
     }
 }
 
-/// Represents a secret key for some AEAD.
+/// An AEAD.
 pub trait Cipher {
     fn name() -> &'static str;
     fn key_len() -> usize;

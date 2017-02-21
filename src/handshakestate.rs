@@ -1,6 +1,6 @@
 use cipherstate::CipherState;
 use crypto_types::{DH, Cipher, Hash};
-use error::{NoiseError, Result};
+use error::NoiseError;
 use handshakepattern::{Token, HandshakePattern};
 use symmetricstate::SymmetricState;
 
@@ -8,7 +8,7 @@ use symmetricstate::SymmetricState;
 ///
 /// Typically, you call `HandshakeState::new()` to initialize a `HandshakeState`, then call
 /// `write_message` and `read_message` to complete the handshake. Once the handshake is `completed`,
-/// you call `get_ciphers` to get ciphers that can be used to encrypt/decrypt futhur messages.
+/// you call `get_ciphers` to get ciphers that can be used to encrypt/decrypt further messages.
 pub struct HandshakeState<D, C, H> {
     symmetric: SymmetricState<C, H>,
     s: Option<D>,
@@ -141,7 +141,7 @@ impl<D, C, H> HandshakeState<D, C, H>
     ///
     /// If the packet fails to decrypt, the whole HandshakeState may be in invalid state, and
     /// should not be used any more.
-    pub fn read_message(&mut self, data: &[u8]) -> Result<Vec<u8>> {
+    pub fn read_message(&mut self, data: &[u8]) -> Result<Vec<u8>, NoiseError> {
         // Check that it is our turn to recv.
         assert!(self.message_index % 2 == if self.is_initiator { 1 } else { 0 });
 

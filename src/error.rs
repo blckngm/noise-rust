@@ -30,5 +30,3 @@ impl ::std::error::Error for NoiseError {
         }
     }
 }
-
-pub type Result<T> = ::std::result::Result<T, NoiseError>;
