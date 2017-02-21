@@ -1,4 +1,4 @@
-//! Rust implementation of the [noise protocol framework](http://www.noiseprotocol.org/).
+//! Rust implementation of the [Noise Protocol Framework](http://www.noiseprotocol.org/).
 //!
 //! Typically, you call `HandshakeState::new()` to initialize a `HandshakeState`, then call
 //! `write_message` and `read_message` to complete the handshake. Once the handshake is completed,
