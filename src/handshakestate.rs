@@ -2,19 +2,19 @@ use cipherstate::CipherState;
 use error::NoiseError;
 use handshakepattern::{Token, HandshakePattern};
 use symmetricstate::SymmetricState;
-use traits::{DH, Cipher, Hash};
+use traits::{DH, Cipher, Hash, U8Array};
 
 /// Noise handshake state.
 ///
 /// Typically, you call `HandshakeState::new()` to initialize a `HandshakeState`, then call
 /// `write_message` and `read_message` to complete the handshake. Once the handshake is `completed`,
 /// you call `get_ciphers` to get ciphers that can be used to encrypt/decrypt further messages.
-pub struct HandshakeState<D, C, H> {
+pub struct HandshakeState<D: DH, C: Cipher, H: Hash> {
     symmetric: SymmetricState<C, H>,
-    s: Option<D>,
-    e: Option<D>,
-    rs: Option<Vec<u8>>,
-    re: Option<Vec<u8>>,
+    s: Option<D::Key>,
+    e: Option<D::Key>,
+    rs: Option<D::Pubkey>,
+    re: Option<D::Pubkey>,
     is_initiator: bool,
     pattern: HandshakePattern,
     message_index: usize,
@@ -41,11 +41,11 @@ impl<D, C, H> HandshakeState<D, C, H>
     pub fn new(pattern: HandshakePattern,
                is_initiator: bool,
                prologue: &[u8],
-               psk: Option<Vec<u8>>,
-               s: Option<D>,
-               e: Option<D>,
-               rs: Option<Vec<u8>>,
-               re: Option<Vec<u8>>)
+               psk: Option<&[u8]>,
+               s: Option<D::Key>,
+               e: Option<D::Key>,
+               rs: Option<D::Pubkey>,
+               re: Option<D::Pubkey>)
                -> Self {
         let mut symmetric = SymmetricState::new(Self::get_name(psk.is_some(), pattern.get_name())
             .as_bytes());
@@ -64,7 +64,7 @@ impl<D, C, H> HandshakeState<D, C, H>
             match *t {
                 Token::S => {
                     if is_initiator {
-                        symmetric.mix_hash(s.as_ref().unwrap().get_pubkey_vec().as_slice());
+                        symmetric.mix_hash(D::pubkey(s.as_ref().unwrap()).as_slice());
                     } else {
                         symmetric.mix_hash(rs.as_ref().unwrap().as_slice());
                     }
@@ -78,7 +78,7 @@ impl<D, C, H> HandshakeState<D, C, H>
                     if is_initiator {
                         symmetric.mix_hash(rs.as_ref().unwrap().as_slice());
                     } else {
-                        symmetric.mix_hash(s.as_ref().unwrap().get_pubkey_vec().as_slice());
+                        symmetric.mix_hash(D::pubkey(s.as_ref().unwrap()).as_slice());
                     }
                 }
                 _ => panic!("Unexpected token in pre message"),
@@ -115,16 +115,16 @@ impl<D, C, H> HandshakeState<D, C, H>
                 Token::E => {
                     // Spec says that we should generate new ephemeral key, but that would make
                     // testing very difficult.
-                    let e_pk = self.e.as_ref().unwrap().get_pubkey_vec();
-                    self.symmetric.mix_hash(&e_pk);
+                    let e_pk = D::pubkey(self.e.as_ref().unwrap());
+                    self.symmetric.mix_hash(e_pk.as_slice());
                     if self.symmetric.has_preshared_key() {
-                        self.symmetric.mix_key(&e_pk);
+                        self.symmetric.mix_key(e_pk.as_slice());
                     }
-                    out.extend_from_slice(&e_pk);
+                    out.extend_from_slice(e_pk.as_slice());
                 }
                 Token::S => {
                     let encrypted_s = self.symmetric
-                        .encrypt_and_hash_vec(self.s.as_ref().unwrap().get_pubkey_vec().as_slice());
+                        .encrypt_and_hash_vec(D::pubkey(self.s.as_ref().unwrap()).as_slice());
                     out.extend_from_slice(&encrypted_s);
                 }
                 t => self.perform_dh(t),
@@ -163,10 +163,11 @@ impl<D, C, H> HandshakeState<D, C, H>
         for t in m {
             match t {
                 Token::E => {
-                    let re: Vec<_> = get(D::pub_len())?.iter().cloned().collect();
-                    self.symmetric.mix_hash(&re);
+                    let mut re = D::Pubkey::new();
+                    re.as_mut().copy_from_slice(get(D::pub_len())?);
+                    self.symmetric.mix_hash(re.as_slice());
                     if self.symmetric.has_preshared_key() {
-                        self.symmetric.mix_key(&re);
+                        self.symmetric.mix_key(re.as_slice());
                     }
                     self.re = Some(re);
                 }
@@ -176,7 +177,9 @@ impl<D, C, H> HandshakeState<D, C, H>
                     } else {
                         D::pub_len()
                     })?;
-                    self.rs = Some(self.symmetric.decrypt_and_hash_vec(temp)?);
+                    let mut rs = D::Pubkey::new();
+                    self.symmetric.decrypt_and_hash(temp, rs.as_mut())?;
+                    self.rs = Some(rs);
                 }
                 t => self.perform_dh(t),
             }
@@ -207,32 +210,28 @@ impl<D, C, H> HandshakeState<D, C, H>
     }
 
     fn perform_dh(&mut self, t: Token) {
-        match t {
-            Token::EE => {
-                let k = self.e.as_ref().unwrap().dh_vec(self.re.as_ref().unwrap().as_slice());
-                self.symmetric.mix_key(&k);
-            }
+        let dh = |a: Option<&D::Key>, b: Option<&D::Pubkey>| D::dh(a.unwrap(), b.unwrap());
+
+        let k = match t {
+            Token::EE => dh(self.e.as_ref(), self.re.as_ref()),
             Token::ES => {
-                let k = if self.is_initiator {
-                    self.e.as_ref().unwrap().dh_vec(self.rs.as_ref().unwrap().as_slice())
+                if self.is_initiator {
+                    dh(self.e.as_ref(), self.rs.as_ref())
                 } else {
-                    self.s.as_ref().unwrap().dh_vec(self.re.as_ref().unwrap().as_slice())
-                };
-                self.symmetric.mix_key(&k);
+                    dh(self.s.as_ref(), self.re.as_ref())
+                }
             }
             Token::SE => {
-                let k = if self.is_initiator {
-                    self.s.as_ref().unwrap().dh_vec(self.re.as_ref().unwrap().as_slice())
+                if self.is_initiator {
+                    dh(self.s.as_ref(), self.re.as_ref())
                 } else {
-                    self.e.as_ref().unwrap().dh_vec(self.rs.as_ref().unwrap().as_slice())
-                };
-                self.symmetric.mix_key(&k);
+                    dh(self.e.as_ref(), self.rs.as_ref())
+                }
             }
-            Token::SS => {
-                let k = self.s.as_ref().unwrap().dh_vec(self.rs.as_ref().unwrap().as_slice());
-                self.symmetric.mix_key(&k);
-            }
+            Token::SS => dh(self.s.as_ref(), self.rs.as_ref()),
             _ => unreachable!(),
-        }
+        };
+
+        self.symmetric.mix_key(k.as_slice());
     }
 }

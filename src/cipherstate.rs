@@ -1,10 +1,10 @@
-use traits::Cipher;
+use traits::{Cipher, U8Array};
 
 /// A `CipherState` can encrypt and decrypt data.
 ///
 /// Mostly like `CipherState` in the spec, but must be created with a key.
-pub struct CipherState<C> {
-    cipher: C,
+pub struct CipherState<C: Cipher> {
+    key: C::Key,
     n: u64,
 }
 
@@ -19,14 +19,14 @@ impl<C> CipherState<C>
     /// Create a new `CipherState` with a `key` and a nonce `n`.
     pub fn new(key: &[u8], n: u64) -> Self {
         CipherState {
-            cipher: C::new(key),
+            key: C::Key::from_slice(key),
             n: n,
         }
     }
 
     /// AEAD encryption.
     pub fn encrypt_ad(&mut self, authtext: &[u8], plaintext: &[u8], out: &mut [u8]) {
-        self.cipher.encrypt(self.n, authtext, plaintext, out);
+        C::encrypt(&self.key, self.n, authtext, plaintext, out);
         // This will fails when n == 2 ^ 64 - 1, complying to the spec.
         self.n = self.n.checked_add(1).unwrap();
     }
@@ -37,7 +37,7 @@ impl<C> CipherState<C>
                       ciphertext: &[u8],
                       out: &mut [u8])
                       -> Result<(), ()> {
-        self.cipher.decrypt(self.n, authtext, ciphertext, out)?;
+        C::decrypt(&self.key, self.n, authtext, ciphertext, out)?;
         self.n = self.n.checked_add(1).unwrap();
         Ok(())
     }
@@ -70,7 +70,7 @@ impl<C> CipherState<C>
     ///
     /// This is useful for e.g. WireGuard. Because packets may be lost or arrive out of order,
     /// they would likely want to deal with nonces themselves.
-    pub fn extract(self) -> (C, u64) {
-        (self.cipher, self.n)
+    pub fn extract(self) -> (C::Key, u64) {
+        (self.key, self.n)
     }
 }

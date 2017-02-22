@@ -1,3 +1,51 @@
+/// A trait for fixed size u8 array.
+
+// Inspired by ArrayVec and SmallVec, but no unsafe.
+pub trait U8Array: Copy {
+    fn new() -> Self;
+    fn new_with(u8) -> Self;
+    fn from_slice(&[u8]) -> Self;
+    fn len() -> usize;
+    fn as_slice(&self) -> &[u8];
+    fn as_mut(&mut self) -> &mut [u8];
+}
+
+macro_rules! impl_array {
+    ($len:expr) => {
+        impl U8Array for [u8; $len] {
+            fn new() -> Self {
+                [0u8; $len]
+            }
+
+            fn new_with(x: u8) -> Self {
+                [x; $len]
+            }
+
+            fn from_slice(data: &[u8]) -> Self {
+                let mut a = [0u8; $len];
+                a.copy_from_slice(data);
+                a
+            }
+
+            fn len() -> usize {
+                $len
+            }
+
+            fn as_slice(&self) -> &[u8] {
+                self
+            }
+
+            fn as_mut(&mut self) -> &mut [u8] {
+                self
+            }
+        }
+    }
+}
+
+impl_array!(32);
+impl_array!(64);
+impl_array!(128);
+
 /// A random number generator.
 pub trait RandomGen {
     fn fill_bytes(&mut self, out: &mut [u8]);
@@ -5,114 +53,110 @@ pub trait RandomGen {
 
 /// A DH.
 pub trait DH {
+    type Key: U8Array;
+    type Pubkey: U8Array;
+    type Output: U8Array;
+
     fn name() -> &'static str;
-    // Really should be an associated constant!
-    fn pub_len() -> usize;
 
-    fn new(privkey: &[u8]) -> Self;
-    fn generate(rng: &mut RandomGen) -> Self;
-
-    fn get_pubkey(&self, out: &mut [u8]);
-
-    fn get_pubkey_vec(&self) -> Vec<u8> {
-        let mut pubkey = vec![0u8; Self::pub_len()];
-        self.get_pubkey(&mut pubkey);
-        pubkey
+    fn pub_len() -> usize {
+        Self::Pubkey::len()
     }
 
-    fn dh(&self, pubkey: &[u8], out: &mut [u8]);
+    fn pubkey(&Self::Key) -> Self::Pubkey;
 
-    fn dh_vec(&self, pubkey: &[u8]) -> Vec<u8> {
-        let mut out = vec![0u8; Self::pub_len()];
-        self.dh(pubkey, &mut out);
-        out
-    }
+    fn dh(&Self::Key, &Self::Pubkey) -> Self::Output;
 }
 
 /// An AEAD.
 pub trait Cipher {
     fn name() -> &'static str;
-    fn key_len() -> usize;
-    fn tag_len() -> usize;
+    type Key: U8Array;
 
-    fn new(key: &[u8]) -> Self;
+    fn key_len() -> usize {
+        Self::Key::len()
+    }
 
-    fn set(&mut self, key: &[u8]);
-    fn encrypt(&self, nonce: u64, ad: &[u8], plaintext: &[u8], out: &mut [u8]);
-    fn decrypt(&self, nonce: u64, ad: &[u8], ciphertext: &[u8], out: &mut [u8]) -> Result<(), ()>;
+    fn tag_len() -> usize {
+        16
+    }
+
+    /// AEAD encryption.
+    ///
+    /// out.len() == plaintext.len() + Self::tag_len()
+    fn encrypt(k: &Self::Key, nonce: u64, ad: &[u8], plaintext: &[u8], out: &mut [u8]);
+
+    /// AEAD decryption.
+    ///
+    /// out.len() == ciphertext.len() - Self::tag_len()
+    fn decrypt(k: &Self::Key,
+               nonce: u64,
+               ad: &[u8],
+               ciphertext: &[u8],
+               out: &mut [u8])
+               -> Result<(), ()>;
 }
 
 /// A hash function.
 pub trait Hash: Default {
     fn name() -> &'static str;
-    fn block_len() -> usize;
-    fn hash_len() -> usize;
+
+    type Block: U8Array;
+    type Output: U8Array;
+
+    fn block_len() -> usize {
+        Self::Block::len()
+    }
+
+    fn hash_len() -> usize {
+        Self::Output::len()
+    }
 
     fn reset(&mut self) {
         *self = Default::default();
     }
 
     fn input(&mut self, data: &[u8]);
-    fn result(&mut self, out: &mut [u8]);
+    fn result(&mut self) -> Self::Output;
 
-    fn result_vec(&mut self) -> Vec<u8> {
-        let mut out = vec![0u8; Self::hash_len()];
-        self.result(&mut out);
-        out
-    }
-
-    fn hash(data: &[u8], out: &mut [u8]) {
+    fn hash(data: &[u8]) -> Self::Output {
         let mut h: Self = Default::default();
         h.input(data);
-        h.result(out);
+        h.result()
     }
 
-    fn hash_vec(data: &[u8]) -> Vec<u8> {
-        let mut h: Self = Default::default();
-        h.input(data);
-        h.result_vec()
-    }
-
-    fn hmac(key: &[u8], data: &[u8], out: &mut [u8]) {
+    fn hmac_many(key: &[u8], data: &[&[u8]]) -> Self::Output {
         assert!(key.len() <= Self::block_len());
-        let block_len = Self::block_len();
-        let mut ipad = vec![0x36u8; Self::block_len()];
-        let mut opad = vec![0x5cu8; Self::block_len()];
+
+        let mut ipad = Self::Block::new_with(0x36u8);
+        let mut opad = Self::Block::new_with(0x5cu8);
+
         for count in 0..key.len() {
-            ipad[count] ^= key[count];
-            opad[count] ^= key[count];
+            ipad.as_mut()[count] ^= key[count];
+            opad.as_mut()[count] ^= key[count];
         }
 
         let mut hasher: Self = Default::default();
-        hasher.input(&ipad[..block_len]);
-        hasher.input(data);
-        let inner_output = hasher.result_vec();
+        hasher.input(ipad.as_slice());
+        for d in data {
+            hasher.input(d);
+        }
+        let inner_output = hasher.result();
 
         hasher.reset();
-        hasher.input(&opad[..block_len]);
-        hasher.input(&inner_output);
-        hasher.result(out);
+        hasher.input(opad.as_slice());
+        hasher.input(inner_output.as_slice());
+        hasher.result()
     }
 
-    fn hmac_vec(key: &[u8], data: &[u8]) -> Vec<u8> {
-        let mut out = vec![0u8; Self::hash_len()];
-        Self::hmac(key, data, &mut out);
-        out
+    fn hmac(key: &[u8], data: &[u8]) -> Self::Output {
+        Self::hmac_many(key, &[data])
     }
 
-    fn hkdf(chaining_key: &[u8], input_key_material: &[u8], out1: &mut [u8], out2: &mut [u8]) {
-        let temp_key = Self::hmac_vec(chaining_key, input_key_material);
-        let mut in2 = Self::hmac_vec(&temp_key, &[1u8]);
-        out1.copy_from_slice(&in2);
-        in2.push(2);
-        Self::hmac(&temp_key, &in2, out2);
-    }
-
-    fn hkdf_vec(chaining_key: &[u8], input_key_material: &[u8]) -> (Vec<u8>, Vec<u8>) {
-        let mut k1 = vec![0u8; Self::hash_len()];
-        let mut k2 = vec![0u8; Self::hash_len()];
-
-        Self::hkdf(chaining_key, input_key_material, &mut k1, &mut k2);
-        (k1, k2)
+    fn hkdf(chaining_key: &[u8], input_key_material: &[u8]) -> (Self::Output, Self::Output) {
+        let temp_key = Self::hmac(chaining_key, input_key_material);
+        let out1 = Self::hmac(temp_key.as_slice(), &[1u8]);
+        let out2 = Self::hmac_many(temp_key.as_slice(), &[out1.as_slice(), &[2u8]]);
+        (out1, out2)
     }
 }

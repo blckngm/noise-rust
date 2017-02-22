@@ -21,7 +21,7 @@ mod error;
 
 pub use cipherstate::CipherState;
 pub use error::NoiseError;
-pub use traits::{RandomGen, DH, Cipher, Hash};
+pub use traits::{U8Array, RandomGen, DH, Cipher, Hash};
 
 /// Handshake patterns.
 pub mod patterns {

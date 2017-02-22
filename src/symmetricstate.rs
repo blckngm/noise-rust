@@ -1,16 +1,11 @@
 use cipherstate::CipherState;
-use std::marker::PhantomData;
-use traits::{Cipher, Hash};
+use traits::{Cipher, Hash, U8Array};
 
-pub struct SymmetricState<C, H> {
+pub struct SymmetricState<C: Cipher, H: Hash> {
     // Instead of `has_key`, use an `Option`.
     cipherstate: Option<CipherState<C>>,
-    // Doesn't actually need an H.
-    hasher: PhantomData<*const H>,
-    // Use Vec, until this is solved:
-    // https://github.com/rust-lang/rust/issues/34344
-    h: Vec<u8>,
-    ck: Vec<u8>,
+    h: H::Output,
+    ck: H::Output,
     has_preshared_key: bool,
 }
 
@@ -20,40 +15,39 @@ impl<C, H> SymmetricState<C, H>
 {
     /// Initialize a `SymmetricState` with a handshake name.
     pub fn new(handshake_name: &[u8]) -> SymmetricState<C, H> {
-        let mut h = vec![0u8; H::hash_len()];
+        let mut h = H::Output::new();
 
         if handshake_name.len() <= H::hash_len() {
-            h[..handshake_name.len()].copy_from_slice(handshake_name);
+            h.as_mut()[..handshake_name.len()].copy_from_slice(handshake_name);
         } else {
-            H::hash(handshake_name, &mut h);
+            h = H::hash(handshake_name);
         }
 
         SymmetricState {
             cipherstate: None,
-            hasher: Default::default(),
-            ck: h.clone(),
+            ck: h,
             h: h,
             has_preshared_key: false,
         }
     }
 
     pub fn mix_key(&mut self, data: &[u8]) {
-        let (k1, k2) = H::hkdf_vec(&self.ck, data);
+        let (k1, k2) = H::hkdf(self.ck.as_slice(), data);
         self.ck = k1;
-        self.cipherstate = Some(CipherState::new(&k2[..C::key_len()], 0));
+        self.cipherstate = Some(CipherState::new(&k2.as_slice()[..C::key_len()], 0));
     }
 
     pub fn mix_hash(&mut self, data: &[u8]) {
         let mut h: H = Default::default();
-        h.input(&self.h);
+        h.input(self.h.as_slice());
         h.input(data);
-        h.result(&mut self.h);
+        self.h = h.result();
     }
 
     pub fn mix_preshared_key(&mut self, psk: &[u8]) {
-        let (k1, k2) = H::hkdf_vec(&self.ck, psk);
+        let (k1, k2) = H::hkdf(self.ck.as_slice(), psk);
         self.ck = k1;
-        self.mix_hash(&k2);
+        self.mix_hash(k2.as_slice());
         self.has_preshared_key = true;
     }
 
@@ -67,7 +61,7 @@ impl<C, H> SymmetricState<C, H>
 
     pub fn encrypt_and_hash(&mut self, plaintext: &[u8], out: &mut [u8]) {
         if let Some(ref mut c) = self.cipherstate {
-            c.encrypt_ad(&self.h, plaintext, out);
+            c.encrypt_ad(self.h.as_slice(), plaintext, out);
         } else {
             out.copy_from_slice(plaintext);
         };
@@ -83,7 +77,7 @@ impl<C, H> SymmetricState<C, H>
 
     pub fn decrypt_and_hash(&mut self, data: &[u8], out: &mut [u8]) -> Result<(), ()> {
         if let Some(ref mut c) = self.cipherstate {
-            c.decrypt_ad(&self.h, data, out)?;
+            c.decrypt_ad(self.h.as_slice(), data, out)?;
         } else {
             out.copy_from_slice(data)
         }
@@ -98,9 +92,9 @@ impl<C, H> SymmetricState<C, H>
     }
 
     pub fn split(&self) -> (CipherState<C>, CipherState<C>) {
-        let (k1, k2) = H::hkdf_vec(&self.ck, &[]);
-        let c1 = CipherState::new(&k1[..C::key_len()], 0);
-        let c2 = CipherState::new(&k2[..C::key_len()], 0);
+        let (k1, k2) = H::hkdf(self.ck.as_slice(), &[]);
+        let c1 = CipherState::new(&k1.as_slice()[..C::key_len()], 0);
+        let c2 = CipherState::new(&k2.as_slice()[..C::key_len()], 0);
         (c1, c2)
     }
 
