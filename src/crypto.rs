@@ -13,6 +13,7 @@ use self::ring::aead;
 use traits::{DH, Cipher, Hash, U8Array};
 
 // TODO zero out secrets in `Drop`.
+// TODO put these in a few separate crates, wrapping different crypto libraries.
 
 pub enum X25519 {}
 

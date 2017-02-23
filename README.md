@@ -1,15 +1,17 @@
 # Noise-Rust
 
 Implementation of the [Noise Protocol
-Framework](http://noiseprotocol.org) in Rust.
-
-Uses [rust-crypto](https://github.com/DaGenix/rust-crypto) but has pluggable
-support for other crypto libraries.
-
-Based on trevp's [screech](https://github.com/trevp/screech).
+Framework](http://noiseprotocol.org) in Rust. A continuation of
+trevp's [screech](https://github.com/trevp/screech).
 
 ## Status
 
-Mostly complete. Play with it!
+All basic patterns are implemented. Vectors from noise-c and cacophony
+are passed.
 
-Perhaps don't use for security critical purposes (yet)!
+Please test and review.
+
+The API is not considered stable yet, and may still change
+non-trivially.
+
+And perhaps don't use for security critical purposes (yet)!
