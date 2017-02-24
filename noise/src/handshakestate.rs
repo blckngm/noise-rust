@@ -6,9 +6,15 @@ use traits::{DH, Cipher, Hash, U8Array};
 
 /// Noise handshake state.
 ///
-/// Typically, you call `HandshakeState::new()` to initialize a `HandshakeState`, then call
-/// `write_message` and `read_message` to complete the handshake. Once the handshake is `completed`,
-/// you call `get_ciphers` to get ciphers that can be used to encrypt/decrypt further messages.
+/// # Panics
+///
+/// `HandshakeState` must be used correctly, or its methods will likely panic:
+///
+/// Keys required by the handshake pattern must be set;
+///
+/// `write_message` and `read_message` must be called in right turns;
+///
+/// `write_message` and `read_message` must not be called after `completed`.
 pub struct HandshakeState<D: DH, C: Cipher, H: Hash> {
     symmetric: SymmetricState<C, H>,
     s: Option<D::Key>,
@@ -56,7 +62,7 @@ impl<D, C, H> HandshakeState<D, C, H>
         // Mix in pre-shared key.
         if let Some(psk) = psk {
             assert_eq!(psk.len(), 32);
-            symmetric.mix_preshared_key(&psk);
+            symmetric.mix_preshared_key(psk);
         }
 
         // Mix in static keys known ahead of time.
@@ -233,5 +239,88 @@ impl<D, C, H> HandshakeState<D, C, H>
         };
 
         self.symmetric.mix_key(k.as_slice());
+    }
+}
+
+/// Builder for `HandshakeState`.
+pub struct HandshakeStateBuilder<'a, D: DH> {
+    pattern: Option<HandshakePattern>,
+    is_initiator: Option<bool>,
+    prologue: Option<&'a [u8]>,
+    psk: Option<&'a [u8]>,
+    s: Option<D::Key>,
+    e: Option<D::Key>,
+    rs: Option<D::Pubkey>,
+    re: Option<D::Pubkey>,
+}
+
+impl<'a, D> HandshakeStateBuilder<'a, D>
+    where D: DH
+{
+    pub fn new() -> Self {
+        HandshakeStateBuilder {
+            pattern: None,
+            is_initiator: None,
+            prologue: None,
+            psk: None,
+            s: None,
+            e: None,
+            rs: None,
+            re: None,
+        }
+    }
+
+    pub fn set_pattern(&mut self, p: HandshakePattern) -> &mut Self {
+        self.pattern = Some(p);
+        self
+    }
+
+    pub fn set_is_initiator(&mut self, is: bool) -> &mut Self {
+        self.is_initiator = Some(is);
+        self
+    }
+
+    pub fn set_prologue(&mut self, prologue: &'a [u8]) -> &mut Self {
+        self.prologue = Some(prologue);
+        self
+    }
+
+    pub fn set_e(&mut self, e: &D::Key) -> &mut Self {
+        self.e = Some(*e);
+        self
+    }
+
+    pub fn set_s(&mut self, s: &D::Key) -> &mut Self {
+        self.s = Some(*s);
+        self
+    }
+
+    pub fn set_re(&mut self, re: &D::Pubkey) -> &mut Self {
+        self.re = Some(*re);
+        self
+    }
+
+    pub fn set_rs(&mut self, rs: &D::Pubkey) -> &mut Self {
+        self.rs = Some(*rs);
+        self
+    }
+
+    /// Build `HandshakeState`.
+    ///
+    /// # Panics
+    ///
+    /// `pattern`, `prologue` and `is_initiator` must be set.
+    pub fn build_handshake_state<C, H>(&self) -> HandshakeState<D, C, H>
+        where C: Cipher,
+              H: Hash
+    {
+        HandshakeState::new(self.pattern.as_ref().unwrap().clone(),
+                            self.is_initiator.unwrap(),
+                            self.prologue.unwrap(),
+                            self.psk,
+                            self.s,
+                            self.e,
+                            self.rs,
+                            self.re)
     }
 }

@@ -1,14 +1,18 @@
-//! Rust implementation of the [Noise Protocol Framework](http://www.noiseprotocol.org/).
+//! Rust implementation of the [Noise Protocol
+//! Framework](http://www.noiseprotocol.org/).
 //!
-//! Typically, you call `HandshakeState::new()` to initialize a `HandshakeState`, then call
-//! `write_message` and `read_message` to complete the handshake. Once the handshake is completed,
-//! you call `get_ciphers` to get ciphers that you can use to encryption/decrypt further messages.
+//! Typically, you use `HandshakeState::new()` or
+//! `HandshakeStateBuilder` to initialize a `HandshakeState`, then
+//! call `write_message` and `read_message` to complete the
+//! handshake. Once the handshake is `completed`, you call
+//! `get_ciphers` to get ciphers that you can use to
+//! encrypt/decrypt further messages.
 //!
-//! Supports most crypto algorithms specified in the spec, expect curve448 key exchange. Supports
-//! all basic patterns. Also supports pre-shared key.
-//!
-//! You can use other implementations of the various crypto primitives by implementing the `DH`,
-//! `Cipher`, or `Hash` traits.
+//! This crate only contains an abstract implementation of the
+//! protocol. Concrete implementations of the crypo primitives,
+//! wrapping around some popular libraries, are provided in sibling
+//! crates, e.g., `noise-ring`, `noise-sodiumoxide` and
+//! `noise-rust-crypto`.
 
 mod traits;
 pub mod rand;
@@ -27,4 +31,4 @@ pub mod patterns {
     pub use handshakepattern::*;
 }
 
-pub use handshakestate::HandshakeState;
+pub use handshakestate::{HandshakeState, HandshakeStateBuilder};
