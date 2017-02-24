@@ -23,5 +23,11 @@ The most notable Rust crypto libraries are probably _ring_,
 them. So wrappers for different libraries are provided in different
 crates.
 
+|             | X25519 | AES-256-GCM | Chacha20-Poly1305 | SHA-256 | SHA-512 | BLAKE2s | BLAKE2b |
+|-------------|:------:|:-----------:|:-----------------:|:-------:|:-------:|:-------:|:-------:|
+| ring        |        | ✔           | ✔                 | ✔       | ✔       |         |         |
+| sodiumoxide | ✔      |             |                   | ✔       | ✔       |         |         |
+| rust-crypto | ✔      |             |                   | ✔       | ✔       | ✔       | ✔       |
+
 You can also plug in other implementations of various primitives by
 implementing the `DH`, `Cipher` or `Hash` traits.
