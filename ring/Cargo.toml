@@ -1,0 +1,14 @@
+[package]
+authors = ["sopium <sopium@mysterious.site>"]
+license = "Unlicense"
+name = "noise-ring"
+readme = "README.md"
+repository = "https://github.com/sopium/noise-rust"
+version = "0.1.0-pre"
+
+[dependencies]
+byteorder = "1.0.0"
+ring = "0.7.1"
+
+[dependencies.noise]
+path = "../noise"

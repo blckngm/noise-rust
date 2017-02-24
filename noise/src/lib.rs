@@ -11,7 +11,6 @@
 //! `Cipher`, or `Hash` traits.
 
 mod traits;
-pub mod crypto;
 pub mod rand;
 mod cipherstate;
 mod symmetricstate;

@@ -1,0 +1,13 @@
+[package]
+authors = ["sopium <sopium@mysterious.site>"]
+license = "Unlicense"
+name = "noise-rust-crypto"
+readme = "README.md"
+repository = "https://github.com/sopium/noise-rust"
+version = "0.1.0-pre"
+
+[dependencies]
+rust-crypto = "0.2.36"
+
+[dependencies.noise]
+path = "../noise"

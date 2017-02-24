@@ -53,6 +53,8 @@ pub trait RandomGen {
 
 /// A DH.
 pub trait DH {
+    // XXX For X25519 private keys, should we “clamp” when generating
+    // them or when using them?
     type Key: U8Array;
     type Pubkey: U8Array;
     type Output: U8Array;

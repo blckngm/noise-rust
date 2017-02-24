@@ -1,0 +1,17 @@
+[package]
+authors = ["sopium <sopium@mysterious.site>"]
+license = "Unlicense"
+name = "noise-sodiumoxide"
+readme = "README.md"
+repository = "https://github.com/sopium/noise-rust"
+version = "0.1.0-pre"
+
+[dependencies]
+byteorder = "1.0.0"
+
+[dependencies.noise]
+path = "../noise"
+
+[dependencies.sodiumoxide]
+default-features = false
+version = "0.0.14"

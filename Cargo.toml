@@ -1,18 +1,2 @@
-[package]
-authors = ["trevp", "sopium"]
-license = "Unlicense"
-name = "noise"
-repository = "https://github.com/sopium/noise-rust"
-version = "0.1.0-pre"
-
-[dependencies]
-byteorder = "1.0"
-rand = "0.3"
-ring = "0.7.1"
-rust-crypto = "0.2"
-
-[dev-dependencies]
-rustc-serialize = "0.3"
-serde = "0.9"
-serde_derive = "0.9"
-serde_json = "0.9"
+[workspace]
+members = ["noise", "ring", "rust-crypto", "sodiumoxide"]
