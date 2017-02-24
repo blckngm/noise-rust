@@ -4,12 +4,27 @@ extern crate sodiumoxide;
 // TODO Add AEADs, after
 // [https://github.com/dnaq/sodiumoxide/pull/149] is merged.
 
-// TODO hash functions.
+// TODO BLAKE2b. After sodiumoxide supports it.
+// [https://github.com/dnaq/sodiumoxide/issues/101]
+
+// TODO Use stream hasher, after this is fixed:
+// [https://github.com/dnaq/sodiumoxide/issues/119]
 
 use noise::*;
+use sodiumoxide::crypto::hash::{sha256, sha512};
 use sodiumoxide::crypto::scalarmult::curve25519;
 
 pub enum X25519 {}
+
+#[derive(Default)]
+pub struct Sha256 {
+    buf: Vec<u8>,
+}
+
+#[derive(Default)]
+pub struct Sha512 {
+    buf: Vec<u8>,
+}
 
 impl DH for X25519 {
     type Key = [u8; 32];
@@ -30,5 +45,39 @@ impl DH for X25519 {
         let pk = curve25519::GroupElement(*pk);
         // XXX DoS???
         curve25519::scalarmult(&s, &pk).unwrap().0
+    }
+}
+
+impl Hash for Sha256 {
+    type Block = [u8; 64];
+    type Output = [u8; 32];
+
+    fn name() -> &'static str {
+        "SHA256"
+    }
+
+    fn input(&mut self, data: &[u8]) {
+        self.buf.extend_from_slice(data);
+    }
+
+    fn result(&mut self) -> Self::Output {
+        sha256::hash(&self.buf).0
+    }
+}
+
+impl Hash for Sha512 {
+    type Block = [u8; 128];
+    type Output = [u8; 64];
+
+    fn name() -> &'static str {
+        "SHA512"
+    }
+
+    fn input(&mut self, data: &[u8]) {
+        self.buf.extend_from_slice(data);
+    }
+
+    fn result(&mut self) -> Self::Output {
+        sha512::hash(&self.buf).0
     }
 }

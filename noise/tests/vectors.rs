@@ -186,12 +186,16 @@ fn verify_vector(v: Vector) {
             verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, crypto::Sha256>(&v);
             verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, ring::Sha256>(&v);
             verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, ring::Sha256>(&v);
+            verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, sodium::Sha256>(&v);
+            verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, sodium::Sha256>(&v);
         }
         ("25519", "ChaChaPoly", "SHA512") => {
             verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, crypto::Sha512>(&v);
             verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, crypto::Sha512>(&v);
             verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, ring::Sha512>(&v);
             verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, ring::Sha512>(&v);
+            verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, sodium::Sha512>(&v);
+            verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, sodium::Sha512>(&v);
         }
         ("25519", "ChaChaPoly", "BLAKE2s") => {
             verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, crypto::Blake2s>(&v);
@@ -206,12 +210,16 @@ fn verify_vector(v: Vector) {
             verify_vector_with::<crypto::X25519, ring::Aes256Gcm, crypto::Sha256>(&v);
             verify_vector_with::<sodium::X25519, ring::Aes256Gcm, ring::Sha256>(&v);
             verify_vector_with::<crypto::X25519, ring::Aes256Gcm, ring::Sha256>(&v);
+            verify_vector_with::<sodium::X25519, ring::Aes256Gcm, sodium::Sha256>(&v);
+            verify_vector_with::<crypto::X25519, ring::Aes256Gcm, sodium::Sha256>(&v);
         }
         ("25519", "AESGCM", "SHA512") => {
             verify_vector_with::<sodium::X25519, ring::Aes256Gcm, crypto::Sha512>(&v);
             verify_vector_with::<crypto::X25519, ring::Aes256Gcm, crypto::Sha512>(&v);
             verify_vector_with::<sodium::X25519, ring::Aes256Gcm, ring::Sha512>(&v);
             verify_vector_with::<crypto::X25519, ring::Aes256Gcm, ring::Sha512>(&v);
+            verify_vector_with::<sodium::X25519, ring::Aes256Gcm, sodium::Sha512>(&v);
+            verify_vector_with::<crypto::X25519, ring::Aes256Gcm, sodium::Sha512>(&v);
         }
         ("25519", "AESGCM", "BLAKE2s") => {
             verify_vector_with::<sodium::X25519, ring::Aes256Gcm, crypto::Blake2s>(&v);
