@@ -4,14 +4,11 @@ extern crate sodiumoxide;
 // TODO Add AEADs, after
 // [https://github.com/dnaq/sodiumoxide/pull/149] is merged.
 
-// TODO BLAKE2b?
-
-// TODO Add streaming hash interface for sodiumoxide.
+// TODO hash functions.
 
 use noise::*;
 use sodiumoxide::crypto::scalarmult::curve25519;
 
-// TODO
 pub enum X25519 {}
 
 impl DH for X25519 {
