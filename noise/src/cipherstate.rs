@@ -25,13 +25,21 @@ impl<C> CipherState<C>
     }
 
     /// AEAD encryption.
+    ///
+    /// # Panics
+    ///
+    /// When nonce reaches maximum u64, i.e. 2 ^ 64 - 1.
     pub fn encrypt_ad(&mut self, authtext: &[u8], plaintext: &[u8], out: &mut [u8]) {
         C::encrypt(&self.key, self.n, authtext, plaintext, out);
-        // This will fails when n == 2 ^ 64 - 1, complying to the spec.
+        // This will fail when n == 2 ^ 64 - 1, complying to the spec.
         self.n = self.n.checked_add(1).unwrap();
     }
 
     /// AEAD decryption.
+    ///
+    /// # Panics
+    ///
+    /// When nonce reaches maximum u64, i.e. 2 ^ 64 - 1.
     pub fn decrypt_ad(&mut self,
                       authtext: &[u8],
                       ciphertext: &[u8],
