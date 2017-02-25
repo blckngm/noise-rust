@@ -188,3 +188,15 @@ pub fn noise_ix() -> HandshakePattern {
         name: "IX",
     }
 }
+
+/// The `Noise_XXfallback` pattern.
+///
+/// Something that is used in noise pipes.
+pub fn noise_xx_fallback() -> HandshakePattern {
+    HandshakePattern {
+        pre_i: vec![],
+        pre_r: vec![E],
+        msg_patterns: vec![vec![E, EE, S, SE], vec![S, ES]],
+        name: "XXfallback",
+    }
+}

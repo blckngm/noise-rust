@@ -75,6 +75,13 @@ impl<D, C, H> HandshakeState<D, C, H>
                         symmetric.mix_hash(rs.as_ref().unwrap().as_slice());
                     }
                 }
+                Token::E => {
+                    if is_initiator {
+                        symmetric.mix_hash(D::pubkey(e.as_ref().unwrap()).as_slice());
+                    } else {
+                        symmetric.mix_hash(re.as_ref().unwrap().as_slice());
+                    }
+                }
                 _ => panic!("Unexpected token in pre message"),
             }
         }
@@ -85,6 +92,13 @@ impl<D, C, H> HandshakeState<D, C, H>
                         symmetric.mix_hash(rs.as_ref().unwrap().as_slice());
                     } else {
                         symmetric.mix_hash(D::pubkey(s.as_ref().unwrap()).as_slice());
+                    }
+                }
+                Token::E => {
+                    if is_initiator {
+                        symmetric.mix_hash(re.as_ref().unwrap().as_slice());
+                    } else {
+                        symmetric.mix_hash(D::pubkey(e.as_ref().unwrap()).as_slice());
                     }
                 }
                 _ => panic!("Unexpected token in pre message"),
