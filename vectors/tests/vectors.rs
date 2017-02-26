@@ -366,6 +366,10 @@ fn noise_c_basic_vectors() {
     let vectors: Vec<Vector> =
         json::from_value(v.as_object().unwrap().get("vectors").unwrap().clone()).unwrap();
 
+    // Assert that we are actually testing something.
+    // Avoid deserialization errors.
+    assert!(vectors.len() > 0);
+
     for v in vectors {
         verify_vector(v);
     }
@@ -377,6 +381,8 @@ fn noise_c_fallback_vectors() {
     let vectors: Vec<Vector> =
         json::from_value(v.as_object().unwrap().get("vectors").unwrap().clone()).unwrap();
 
+    assert!(vectors.len() > 0);
+
     for v in vectors {
         verify_vector(v);
     }
@@ -387,6 +393,8 @@ fn cacophony_vectors() {
     let v: json::Value = json::from_str(include_str!("vectors/cacophony.txt")).unwrap();
     let vectors: Vec<Vector> =
         json::from_value(v.as_object().unwrap().get("vectors").unwrap().clone()).unwrap();
+
+    assert!(vectors.len() > 0);
 
     for v in vectors {
         verify_vector(v);
