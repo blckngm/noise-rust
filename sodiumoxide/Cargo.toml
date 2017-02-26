@@ -5,7 +5,8 @@ name = "noise-sodiumoxide"
 readme = "README.md"
 repository = "https://github.com/sopium/noise-rust"
 version = "0.0.1"
-description = "Sodiumoxide wrappers for noise-protocol"
+description = "Sodiumoxide wrappers for noise-protocol."
+documentation = "https://docs.rs/noise-sodiumoxide/0.0.1"
 
 [dependencies]
 byteorder = "1.0.0"

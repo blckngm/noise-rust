@@ -5,7 +5,8 @@ name = "noise-rust-crypto"
 readme = "README.md"
 repository = "https://github.com/sopium/noise-rust"
 version = "0.0.1"
-description = "Rust-crypto wrappers for noise-protocol"
+description = "Rust-crypto wrappers for noise-protocol."
+documentation = "https://docs.rs/noise-rust-crypto/0.0.1"
 
 [dependencies]
 rust-crypto = "0.2.36"
