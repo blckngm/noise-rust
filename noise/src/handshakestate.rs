@@ -245,6 +245,11 @@ impl<D, C, H> HandshakeState<D, C, H>
         self.symmetric.split()
     }
 
+    /// Get remote static pubkey, if available.
+    pub fn get_rs(&self) -> Option<D::Pubkey> {
+        self.rs
+    }
+
     /// Get remote semi-ephemeral pubkey.
     ///
     /// Returns `None` if we do not know.
