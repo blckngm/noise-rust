@@ -1,0 +1,14 @@
+[package]
+name = "noise-vectors"
+version = "0.0.1"
+authors = ["sopium <sopium@mysterious.site>"]
+
+[dev-dependencies]
+rustc-serialize = "0.3"
+serde = "0.9"
+serde_derive = "0.9"
+serde_json = "0.9"
+noise-protocol = { path = "../noise" }
+noise-ring = { path = "../ring" }
+noise-rust-crypto = { path = "../rust-crypto" }
+noise-sodiumoxide = { path = "../sodiumoxide" }

@@ -1,6 +1,6 @@
 // Program to verify the vectors.
 
-extern crate noise;
+extern crate noise_protocol as noise;
 extern crate noise_sodiumoxide;
 extern crate noise_ring;
 extern crate noise_rust_crypto;

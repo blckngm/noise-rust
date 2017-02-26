@@ -1,4 +1,4 @@
-extern crate noise;
+extern crate noise_protocol as noise;
 extern crate sodiumoxide;
 
 // TODO Add AEADs, after

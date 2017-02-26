@@ -1,19 +1,13 @@
 [package]
 authors = ["trevp", "sopium"]
 license = "Unlicense"
-name = "noise"
+name = "noise-protocol"
 readme = "README.md"
 repository = "https://github.com/sopium/noise-rust"
-version = "0.1.0-pre"
+version = "0.0.1"
+description = "Noise Protocol Framework implementation"
+keywords = ["noise"]
+categories = ["cryptography"]
 
 [dependencies]
 rand = "0.3"
-
-[dev-dependencies]
-rustc-serialize = "0.3"
-serde = "0.9"
-serde_derive = "0.9"
-serde_json = "0.9"
-noise-ring = { path = "../ring" }
-noise-rust-crypto = { path = "../rust-crypto" }
-noise-sodiumoxide = { path = "../sodiumoxide" }

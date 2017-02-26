@@ -4,13 +4,15 @@ license = "Unlicense"
 name = "noise-sodiumoxide"
 readme = "README.md"
 repository = "https://github.com/sopium/noise-rust"
-version = "0.1.0-pre"
+version = "0.0.1"
+description = "Sodiumoxide wrappers for noise-protocol"
 
 [dependencies]
 byteorder = "1.0.0"
 
-[dependencies.noise]
+[dependencies.noise-protocol]
 path = "../noise"
+version = "0.0.1"
 
 [dependencies.sodiumoxide]
 default-features = false

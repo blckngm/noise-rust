@@ -4,10 +4,12 @@ license = "Unlicense"
 name = "noise-rust-crypto"
 readme = "README.md"
 repository = "https://github.com/sopium/noise-rust"
-version = "0.1.0-pre"
+version = "0.0.1"
+description = "Rust-crypto wrappers for noise-protocol"
 
 [dependencies]
 rust-crypto = "0.2.36"
 
-[dependencies.noise]
+[dependencies.noise-protocol]
 path = "../noise"
+version = "0.0.1"

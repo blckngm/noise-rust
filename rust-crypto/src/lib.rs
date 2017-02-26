@@ -1,6 +1,5 @@
 extern crate crypto;
-extern crate noise;
-
+extern crate noise_protocol as noise;
 
 use self::crypto::{blake2b, blake2s, sha2};
 use self::crypto::curve25519::{curve25519, curve25519_base};

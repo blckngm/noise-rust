@@ -1,2 +1,2 @@
 [workspace]
-members = ["noise", "ring", "rust-crypto", "sodiumoxide"]
+members = ["noise", "ring", "rust-crypto", "sodiumoxide", "vectors"]
