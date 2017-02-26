@@ -1,5 +1,8 @@
 # Noise-Rust
 
+[![Crates.io](https://img.shields.io/crates/v/noise-protocol.svg)](https://crates.io/crates/noise-protocol)
+[![Docs.rs](https://docs.rs/noise-protocol/badge.svg)](https://docs.rs/noise-protocol)
+
 Implementation of the [Noise Protocol
 Framework](http://noiseprotocol.org) in Rust. A continuation of
 trevp's [screech](https://github.com/trevp/screech).
