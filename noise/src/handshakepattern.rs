@@ -37,8 +37,6 @@ impl HandshakePattern {
     }
 }
 
-// TODO fallback?
-
 /// The `Noise_N` pattern.
 pub fn noise_n() -> HandshakePattern {
     HandshakePattern {

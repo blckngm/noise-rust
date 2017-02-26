@@ -47,6 +47,7 @@ struct Vector {
     resp_remote_static: Option<HexString>,
     handshake_hash: Option<HexString>,
     messages: Vec<Message>,
+    fallback: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -93,6 +94,11 @@ fn verify_vector_with<D, C, H>(v: &Vector)
           C: Cipher,
           H: Hash
 {
+    if v.fallback.unwrap_or(false) {
+        verify_vector_fallback::<D, C, H>(v);
+        return;
+    }
+
     let pattern = get_pattern_by_name(v.pattern.as_str());
     if pattern.is_none() {
         println!("Unknown pattern {}", v.pattern);
@@ -171,9 +177,128 @@ fn verify_vector_with<D, C, H>(v: &Vector)
             }
         }
         // Let the peer send if not a one-way pattern.
-        if v.pattern.len() == 2 {
+        if v.pattern.len() != 1 {
             init_send = !init_send;
         }
+    }
+}
+
+fn verify_vector_fallback<D, C, H>(v: &Vector)
+    where D: DH,
+          C: Cipher,
+          H: Hash
+{
+    assert_eq!(v.pattern, "IK");
+
+    let iprologue = v.init_prologue.to_bytes();
+    let ie = to_dh::<D>(&v.init_ephemeral);
+    let is = to_dh::<D>(v.init_static.as_ref().unwrap());
+    let irs = to_pubkey::<D>(v.init_remote_static.as_ref().unwrap());
+
+    let rprologue = v.resp_prologue.to_bytes();
+    let re = to_dh::<D>(v.resp_ephemeral.as_ref().unwrap());
+    let rs = to_dh::<D>(v.resp_static.as_ref().unwrap());
+
+    let ipsk = v.init_psk.as_ref().map(HexString::to_bytes);
+    let ipsk = ipsk.as_ref().map(|x| x.as_slice());
+    let rpsk = v.resp_psk.as_ref().map(HexString::to_bytes);
+    let rpsk = rpsk.as_ref().map(|x| x.as_slice());
+
+    // Build init handshake state.
+    let mut ibuilder = HandshakeStateBuilder::<D>::new();
+    ibuilder.set_is_initiator(true);
+    ibuilder.set_pattern(noise_ik());
+    ibuilder.set_prologue(&iprologue);
+    if ipsk.is_some() {
+        ibuilder.set_psk(ipsk.unwrap());
+    }
+    ibuilder.set_e(&ie);
+    ibuilder.set_s(&is);
+    ibuilder.set_rs(&irs);
+    let mut ih0 = ibuilder.build_handshake_state::<C, H>();
+
+    // Build resp handshake state.
+    let mut rbuilder = HandshakeStateBuilder::<D>::new();
+    rbuilder.set_is_initiator(false);
+    rbuilder.set_pattern(noise_ik());
+    rbuilder.set_prologue(&rprologue);
+    if rpsk.is_some() {
+        ibuilder.set_psk(rpsk.unwrap());
+    }
+    rbuilder.set_s(&rs);
+    rbuilder.set_e(&re);
+    let mut rh0 = rbuilder.build_handshake_state::<C, H>();
+
+    // Abbreviated handshake (IK), should fail.
+    let m0 = ih0.write_message(v.messages[0].payload.to_bytes().as_slice());
+    assert_eq!(m0, v.messages[0].ciphertext.to_bytes().as_slice());
+
+    assert!(rh0.read_message(&m0).is_err());
+
+    // Build init handshake state.
+    let mut ibuilder = HandshakeStateBuilder::<D>::new();
+    ibuilder.set_is_initiator(true);
+    ibuilder.set_pattern(noise_xx_fallback());
+    ibuilder.set_prologue(&rprologue);
+    if rpsk.is_some() {
+        ibuilder.set_psk(rpsk.unwrap());
+    }
+    ibuilder.set_e(&re);
+    ibuilder.set_s(&rs);
+    ibuilder.set_re(&rh0.get_re().unwrap());
+    let mut ih1 = ibuilder.build_handshake_state::<C, H>();
+
+    // Build resp handshake state.
+    let mut rbuilder = HandshakeStateBuilder::<D>::new();
+    rbuilder.set_is_initiator(false);
+    rbuilder.set_pattern(noise_xx_fallback());
+    rbuilder.set_prologue(&iprologue);
+    if ipsk.is_some() {
+        rbuilder.set_psk(ipsk.unwrap());
+    }
+    rbuilder.set_s(&is);
+    rbuilder.set_e(&ie);
+    let mut rh1 = rbuilder.build_handshake_state::<C, H>();
+
+    // Fallback handshake.
+    let m1 = ih1.write_message(v.messages[1].payload.to_bytes().as_slice());
+    assert_eq!(m1, v.messages[1].ciphertext.to_bytes());
+    rh1.read_message(&m1).unwrap();
+
+    let m2 = rh1.write_message(v.messages[2].payload.to_bytes().as_slice());
+    assert_eq!(m2, v.messages[2].ciphertext.to_bytes());
+    ih1.read_message(&m2).unwrap();
+
+    assert!(ih1.completed());
+    assert!(rh1.completed());
+
+    if v.handshake_hash.is_some() {
+        let h = v.handshake_hash.as_ref().unwrap().to_bytes();
+        assert_eq!(h, ih1.get_hash());
+        assert_eq!(h, rh1.get_hash());
+    }
+
+    // Transport messages.
+    let mut i_should_send = true;
+    let (mut isend, mut irecv) = ih1.get_ciphers();
+    let (mut rrecv, mut rsend) = rh1.get_ciphers();
+
+    for m in &v.messages[3..] {
+        let (send, recv) = if i_should_send {
+            (&mut isend, &mut rrecv)
+        } else {
+            (&mut rsend, &mut irecv)
+        };
+
+        let payload = m.payload.to_bytes();
+
+        let c = send.encrypt_vec(&payload);
+        assert_eq!(c, m.ciphertext.to_bytes());
+
+        let m1 = recv.decrypt_vec(&c).unwrap();
+        assert_eq!(m1, payload);
+
+        i_should_send = !i_should_send;
     }
 }
 
@@ -238,6 +363,17 @@ fn verify_vector(v: Vector) {
 #[test]
 fn noise_c_basic_vectors() {
     let v: json::Value = json::from_str(include_str!("vectors/noise-c-basic.txt")).unwrap();
+    let vectors: Vec<Vector> =
+        json::from_value(v.as_object().unwrap().get("vectors").unwrap().clone()).unwrap();
+
+    for v in vectors {
+        verify_vector(v);
+    }
+}
+
+#[test]
+fn noise_c_fallback_vectors() {
+    let v: json::Value = json::from_str(include_str!("vectors/noise-c-fallback.txt")).unwrap();
     let vectors: Vec<Vector> =
         json::from_value(v.as_object().unwrap().get("vectors").unwrap().clone()).unwrap();
 

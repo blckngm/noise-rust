@@ -77,9 +77,17 @@ impl<D, C, H> HandshakeState<D, C, H>
                 }
                 Token::E => {
                     if is_initiator {
-                        symmetric.mix_hash(D::pubkey(e.as_ref().unwrap()).as_slice());
+                        let e = D::pubkey(e.as_ref().unwrap());
+                        symmetric.mix_hash(e.as_slice());
+                        if symmetric.has_preshared_key() {
+                            symmetric.mix_key(e.as_slice());
+                        }
                     } else {
-                        symmetric.mix_hash(re.as_ref().unwrap().as_slice());
+                        let re = re.as_ref().unwrap().as_slice();
+                        symmetric.mix_hash(re);
+                        if symmetric.has_preshared_key() {
+                            symmetric.mix_key(re);
+                        }
                     }
                 }
                 _ => panic!("Unexpected token in pre message"),
@@ -96,9 +104,17 @@ impl<D, C, H> HandshakeState<D, C, H>
                 }
                 Token::E => {
                     if is_initiator {
-                        symmetric.mix_hash(re.as_ref().unwrap().as_slice());
+                        let re = re.as_ref().unwrap().as_slice();
+                        symmetric.mix_hash(re);
+                        if symmetric.has_preshared_key() {
+                            symmetric.mix_key(re);
+                        }
                     } else {
-                        symmetric.mix_hash(D::pubkey(e.as_ref().unwrap()).as_slice());
+                        let e = D::pubkey(e.as_ref().unwrap());
+                        symmetric.mix_hash(e.as_slice());
+                        if symmetric.has_preshared_key() {
+                            symmetric.mix_key(e.as_slice());
+                        }
                     }
                 }
                 _ => panic!("Unexpected token in pre message"),
@@ -160,7 +176,7 @@ impl<D, C, H> HandshakeState<D, C, H>
     /// Update handshake state and get payload, given a packet.
     ///
     /// If the packet fails to decrypt, the whole HandshakeState may be in invalid state, and
-    /// should not be used any more.
+    /// should not be used any more. Expect to `get_re` before falling back to `XXfallback`.
     pub fn read_message(&mut self, data: &[u8]) -> Result<Vec<u8>, NoiseError> {
         // Check that it is our turn to recv.
         assert!(self.message_index % 2 == if self.is_initiator { 1 } else { 0 });
@@ -227,6 +243,15 @@ impl<D, C, H> HandshakeState<D, C, H>
     /// Should be called after handshake is `completed()`.
     pub fn get_ciphers(&self) -> (CipherState<C>, CipherState<C>) {
         self.symmetric.split()
+    }
+
+    /// Get remote semi-ephemeral pubkey.
+    ///
+    /// Returns `None` if we do not know.
+    ///
+    /// Useful for noise-pipes.
+    pub fn get_re(&self) -> Option<D::Pubkey> {
+        self.re
     }
 
     fn perform_dh(&mut self, t: Token) {
@@ -296,6 +321,11 @@ impl<'a, D> HandshakeStateBuilder<'a, D>
 
     pub fn set_prologue(&mut self, prologue: &'a [u8]) -> &mut Self {
         self.prologue = Some(prologue);
+        self
+    }
+
+    pub fn set_psk(&mut self, psk: &'a [u8]) -> &mut Self {
+        self.psk = Some(psk);
         self
     }
 
