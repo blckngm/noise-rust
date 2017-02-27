@@ -302,63 +302,7 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     }
 }
 
-fn verify_vector(v: Vector) {
-    match (v.dh.clone().as_ref(), v.cipher.clone().as_ref(), v.hash.clone().as_ref()) {
-        // Poor man's dynamic dispatch?
-        // XXX Someone please write a macro for this...
-        ("25519", "ChaChaPoly", "SHA256") => {
-            verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, crypto::Sha256>(&v);
-            verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, crypto::Sha256>(&v);
-            verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, ring::Sha256>(&v);
-            verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, ring::Sha256>(&v);
-            verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, sodium::Sha256>(&v);
-            verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, sodium::Sha256>(&v);
-        }
-        ("25519", "ChaChaPoly", "SHA512") => {
-            verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, crypto::Sha512>(&v);
-            verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, crypto::Sha512>(&v);
-            verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, ring::Sha512>(&v);
-            verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, ring::Sha512>(&v);
-            verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, sodium::Sha512>(&v);
-            verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, sodium::Sha512>(&v);
-        }
-        ("25519", "ChaChaPoly", "BLAKE2s") => {
-            verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, crypto::Blake2s>(&v);
-            verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, crypto::Blake2s>(&v);
-        }
-        ("25519", "ChaChaPoly", "BLAKE2b") => {
-            verify_vector_with::<sodium::X25519, ring::ChaCha20Poly1305, crypto::Blake2b>(&v);
-            verify_vector_with::<crypto::X25519, ring::ChaCha20Poly1305, crypto::Blake2b>(&v);
-        }
-        ("25519", "AESGCM", "SHA256") => {
-            verify_vector_with::<sodium::X25519, ring::Aes256Gcm, crypto::Sha256>(&v);
-            verify_vector_with::<crypto::X25519, ring::Aes256Gcm, crypto::Sha256>(&v);
-            verify_vector_with::<sodium::X25519, ring::Aes256Gcm, ring::Sha256>(&v);
-            verify_vector_with::<crypto::X25519, ring::Aes256Gcm, ring::Sha256>(&v);
-            verify_vector_with::<sodium::X25519, ring::Aes256Gcm, sodium::Sha256>(&v);
-            verify_vector_with::<crypto::X25519, ring::Aes256Gcm, sodium::Sha256>(&v);
-        }
-        ("25519", "AESGCM", "SHA512") => {
-            verify_vector_with::<sodium::X25519, ring::Aes256Gcm, crypto::Sha512>(&v);
-            verify_vector_with::<crypto::X25519, ring::Aes256Gcm, crypto::Sha512>(&v);
-            verify_vector_with::<sodium::X25519, ring::Aes256Gcm, ring::Sha512>(&v);
-            verify_vector_with::<crypto::X25519, ring::Aes256Gcm, ring::Sha512>(&v);
-            verify_vector_with::<sodium::X25519, ring::Aes256Gcm, sodium::Sha512>(&v);
-            verify_vector_with::<crypto::X25519, ring::Aes256Gcm, sodium::Sha512>(&v);
-        }
-        ("25519", "AESGCM", "BLAKE2s") => {
-            verify_vector_with::<sodium::X25519, ring::Aes256Gcm, crypto::Blake2s>(&v);
-            verify_vector_with::<crypto::X25519, ring::Aes256Gcm, crypto::Blake2s>(&v);
-        }
-        ("25519", "AESGCM", "BLAKE2b") => {
-            verify_vector_with::<sodium::X25519, ring::Aes256Gcm, crypto::Blake2b>(&v);
-            verify_vector_with::<crypto::X25519, ring::Aes256Gcm, crypto::Blake2b>(&v);
-        }
-        // Curve448 is not supported (yet).
-        ("448", _, _) => (),
-        (dh, cipher, hash) => println!("Unknown combination: {}_{}_{}", dh, cipher, hash),
-    }
-}
+include!("impls");
 
 #[test]
 fn noise_c_basic_vectors() {

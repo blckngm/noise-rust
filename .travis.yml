@@ -1,4 +1,8 @@
 sudo: false
+addons:
+  apt:
+    packages:
+      - python3
 language: rust
 rust:
   - stable
@@ -14,4 +18,5 @@ install:
   - export PATH=$HOME/.cargo/bin/:$PATH
 
 script:
+  - cd vectors/tests/ && python3 gen.py > impls
   - cargo test --all --verbose
