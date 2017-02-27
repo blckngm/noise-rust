@@ -59,17 +59,8 @@ impl_array!(32);
 impl_array!(64);
 impl_array!(128);
 
-/// A random number generator.
-pub trait RandomGen {
-    /// Fill a mutable slice with random bytes.
-    fn fill_bytes(&mut self, out: &mut [u8]);
-}
-
 /// A DH.
 pub trait DH {
-    // XXX For X25519 private keys, should we “clamp” when generating
-    // them or when using them?
-
     /// Type of private key.
     type Key: U8Array;
     /// Type of pubkey key.
@@ -80,10 +71,8 @@ pub trait DH {
     /// Name of this DH function, e.g., “25519”.
     fn name() -> &'static str;
 
-    /// Length of public key.
-    fn pub_len() -> usize {
-        Self::Pubkey::len()
-    }
+    /// Randomly generate a new private key.
+    fn genkey() -> Self::Key;
 
     /// Calculate public key from a private key.
     fn pubkey(&Self::Key) -> Self::Pubkey;

@@ -10,6 +10,7 @@ documentation = "https://docs.rs/noise-rust-crypto/0.0.1"
 
 [dependencies]
 rust-crypto = "0.2.36"
+rand = "0.3"
 
 [dependencies.noise-protocol]
 path = "../noise"

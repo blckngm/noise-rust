@@ -13,6 +13,15 @@ extern crate sodiumoxide;
 use noise::*;
 use sodiumoxide::crypto::hash::{sha256, sha512};
 use sodiumoxide::crypto::scalarmult::curve25519;
+use sodiumoxide::init as sodium_init;
+use sodiumoxide::randombytes::randombytes_into;
+
+/// Sodiumoxide init.
+///
+/// This will make some operations potentially faster, and make `genkey` thread safe.
+pub fn init() {
+    sodium_init();
+}
 
 pub enum X25519 {}
 
@@ -33,6 +42,15 @@ impl DH for X25519 {
 
     fn name() -> &'static str {
         "25519"
+    }
+
+    fn genkey() -> Self::Key {
+        let mut k = [0u8; 32];
+        randombytes_into(&mut k);
+        k[0] &= 248;
+        k[31] &= 127;
+        k[31] |= 64;
+        k
     }
 
     fn pubkey(k: &Self::Key) -> Self::Pubkey {

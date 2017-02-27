@@ -204,7 +204,7 @@ impl<D, C, H> HandshakeState<D, C, H>
             match t {
                 Token::E => {
                     let mut re = D::Pubkey::new();
-                    re.as_mut().copy_from_slice(get(D::pub_len())?);
+                    re.as_mut().copy_from_slice(get(D::Pubkey::len())?);
                     self.symmetric.mix_hash(re.as_slice());
                     if self.symmetric.has_preshared_key() {
                         self.symmetric.mix_key(re.as_slice());
@@ -213,9 +213,9 @@ impl<D, C, H> HandshakeState<D, C, H>
                 }
                 Token::S => {
                     let temp = get(if self.symmetric.has_key() {
-                        D::pub_len() + 16
+                        D::Pubkey::len() + 16
                     } else {
-                        D::pub_len()
+                        D::Pubkey::len()
                     })?;
                     let mut rs = D::Pubkey::new();
                     self.symmetric.decrypt_and_hash(temp, rs.as_mut())?;

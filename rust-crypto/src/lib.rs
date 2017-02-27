@@ -1,9 +1,11 @@
 extern crate crypto;
+extern crate rand;
 extern crate noise_protocol as noise;
 
 use self::crypto::{blake2b, blake2s, sha2};
 use self::crypto::curve25519::{curve25519, curve25519_base};
 use self::crypto::digest::Digest;
+use self::rand::{OsRng, Rng};
 use noise::*;
 
 pub enum X25519 {}
@@ -31,6 +33,17 @@ impl DH for X25519 {
 
     fn name() -> &'static str {
         "25519"
+    }
+
+    fn genkey() -> Self::Key {
+        let mut k = [0u8; 32];
+
+        OsRng::new().unwrap().fill_bytes(&mut k);
+
+        k[0] &= 248;
+        k[31] &= 127;
+        k[31] |= 64;
+        k
     }
 
     fn pubkey(k: &Self::Key) -> Self::Pubkey {

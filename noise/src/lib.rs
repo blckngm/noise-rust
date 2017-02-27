@@ -17,7 +17,6 @@
 #[warn(missing_docs)]
 
 mod traits;
-pub mod rand;
 mod cipherstate;
 mod symmetricstate;
 mod handshakestate;
@@ -26,7 +25,7 @@ mod error;
 
 pub use cipherstate::CipherState;
 pub use error::NoiseError;
-pub use traits::{U8Array, RandomGen, DH, Cipher, Hash};
+pub use traits::{U8Array, DH, Cipher, Hash};
 
 /// Handshake patterns.
 pub mod patterns {
