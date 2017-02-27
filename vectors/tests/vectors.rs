@@ -212,9 +212,9 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     if ipsk.is_some() {
         ibuilder.set_psk(ipsk.unwrap());
     }
-    ibuilder.set_e(&ie);
-    ibuilder.set_s(&is);
-    ibuilder.set_rs(&irs);
+    ibuilder.set_e(ie.clone());
+    ibuilder.set_s(is.clone());
+    ibuilder.set_rs(irs);
     let mut ih0 = ibuilder.build_handshake_state::<C, H>();
 
     // Build resp handshake state.
@@ -223,10 +223,10 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     rbuilder.set_pattern(noise_ik());
     rbuilder.set_prologue(&rprologue);
     if rpsk.is_some() {
-        ibuilder.set_psk(rpsk.unwrap());
+        rbuilder.set_psk(rpsk.unwrap());
     }
-    rbuilder.set_s(&rs);
-    rbuilder.set_e(&re);
+    rbuilder.set_s(rs.clone());
+    rbuilder.set_e(re.clone());
     let mut rh0 = rbuilder.build_handshake_state::<C, H>();
 
     // Abbreviated handshake (IK), should fail.
@@ -243,9 +243,9 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     if rpsk.is_some() {
         ibuilder.set_psk(rpsk.unwrap());
     }
-    ibuilder.set_e(&re);
-    ibuilder.set_s(&rs);
-    ibuilder.set_re(&rh0.get_re().unwrap());
+    ibuilder.set_e(re);
+    ibuilder.set_s(rs);
+    ibuilder.set_re(rh0.get_re().unwrap());
     let mut ih1 = ibuilder.build_handshake_state::<C, H>();
 
     // Build resp handshake state.
@@ -256,8 +256,8 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     if ipsk.is_some() {
         rbuilder.set_psk(ipsk.unwrap());
     }
-    rbuilder.set_s(&is);
-    rbuilder.set_e(&ie);
+    rbuilder.set_s(is);
+    rbuilder.set_e(ie);
     let mut rh1 = rbuilder.build_handshake_state::<C, H>();
 
     // Fallback handshake.

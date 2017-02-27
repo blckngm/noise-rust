@@ -4,7 +4,7 @@
 
 // Use this trait so that we don't have to use `Vec` for some semi-fixed length buffers and
 // input/output types.
-pub trait U8Array: Copy {
+pub trait U8Array {
     /// Create a new array filled with all zeros.
     fn new() -> Self;
     /// Create a new array filled with a same value.
@@ -62,11 +62,11 @@ impl_array!(128);
 /// A DH.
 pub trait DH {
     /// Type of private key.
-    type Key: U8Array;
+    type Key: U8Array + Clone;
     /// Type of pubkey key.
-    type Pubkey: U8Array;
+    type Pubkey: U8Array + Clone;
     /// Type of output.
-    type Output: U8Array;
+    type Output: U8Array + Clone;
 
     /// Name of this DH function, e.g., “25519”.
     fn name() -> &'static str;
@@ -124,7 +124,7 @@ pub trait Hash: Default {
     /// Type of a block.
     type Block: U8Array;
     /// Type of output.
-    type Output: U8Array;
+    type Output: U8Array + Copy;
 
     /// Length of block.
     fn block_len() -> usize {

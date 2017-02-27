@@ -2,11 +2,49 @@ extern crate crypto;
 extern crate rand;
 extern crate noise_protocol as noise;
 
+use self::crypto::util::secure_memset;
 use self::crypto::{blake2b, blake2s, sha2};
 use self::crypto::curve25519::{curve25519, curve25519_base};
 use self::crypto::digest::Digest;
 use self::rand::{OsRng, Rng};
 use noise::*;
+
+#[derive(Clone)]
+pub struct SecretKey([u8; 32]);
+
+impl U8Array for SecretKey {
+    fn new() -> Self {
+        SecretKey([0u8; 32])
+    }
+
+    fn new_with(v: u8) -> Self {
+        SecretKey([v; 32])
+    }
+
+    fn from_slice(s: &[u8]) -> Self {
+        let mut a = [0u8; 32];
+        a.copy_from_slice(s);
+        SecretKey(a)
+    }
+
+    fn len() -> usize {
+        32
+    }
+
+    fn as_slice(&self) -> &[u8] {
+        &self.0
+    }
+
+    fn as_mut(&mut self) -> &mut [u8] {
+        &mut self.0
+    }
+}
+
+impl Drop for SecretKey {
+    fn drop(&mut self) {
+        secure_memset(&mut self.0, 0);
+    }
+}
 
 pub enum X25519 {}
 
@@ -27,7 +65,7 @@ pub struct Blake2s {
 }
 
 impl DH for X25519 {
-    type Key = [u8; 32];
+    type Key = SecretKey;
     type Pubkey = [u8; 32];
     type Output = [u8; 32];
 
@@ -43,7 +81,7 @@ impl DH for X25519 {
         k[0] &= 248;
         k[31] &= 127;
         k[31] |= 64;
-        k
+        SecretKey(k)
     }
 
     fn pubkey(k: &Self::Key) -> Self::Pubkey {

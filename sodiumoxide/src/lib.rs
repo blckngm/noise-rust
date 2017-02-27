@@ -15,12 +15,50 @@ use sodiumoxide::crypto::hash::{sha256, sha512};
 use sodiumoxide::crypto::scalarmult::curve25519;
 use sodiumoxide::init as sodium_init;
 use sodiumoxide::randombytes::randombytes_into;
+use sodiumoxide::utils::memzero;
 
 /// Sodiumoxide init.
 ///
 /// This will make some operations potentially faster, and make `genkey` thread safe.
 pub fn init() {
     sodium_init();
+}
+
+#[derive(Clone)]
+pub struct SecretKey([u8; 32]);
+
+impl U8Array for SecretKey {
+    fn new() -> Self {
+        SecretKey([0u8; 32])
+    }
+
+    fn new_with(v: u8) -> Self {
+        SecretKey([v; 32])
+    }
+
+    fn from_slice(s: &[u8]) -> Self {
+        let mut a = [0u8; 32];
+        a.copy_from_slice(s);
+        SecretKey(a)
+    }
+
+    fn len() -> usize {
+        32
+    }
+
+    fn as_slice(&self) -> &[u8] {
+        &self.0
+    }
+
+    fn as_mut(&mut self) -> &mut [u8] {
+        &mut self.0
+    }
+}
+
+impl Drop for SecretKey {
+    fn drop(&mut self) {
+        memzero(&mut self.0);
+    }
 }
 
 pub enum X25519 {}
@@ -36,7 +74,7 @@ pub struct Sha512 {
 }
 
 impl DH for X25519 {
-    type Key = [u8; 32];
+    type Key = SecretKey;
     type Pubkey = [u8; 32];
     type Output = [u8; 32];
 
@@ -50,16 +88,16 @@ impl DH for X25519 {
         k[0] &= 248;
         k[31] &= 127;
         k[31] |= 64;
-        k
+        SecretKey(k)
     }
 
     fn pubkey(k: &Self::Key) -> Self::Pubkey {
-        let s = curve25519::Scalar(*k);
+        let s = curve25519::Scalar(k.0);
         curve25519::scalarmult_base(&s).0
     }
 
     fn dh(k: &Self::Key, pk: &Self::Pubkey) -> Self::Output {
-        let s = curve25519::Scalar(*k);
+        let s = curve25519::Scalar(k.0);
         let pk = curve25519::GroupElement(*pk);
         // Libsodium returns error when DH result is all-zero, but noise explicitly permits that.
         // See section 9.1 of the spec:

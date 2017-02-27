@@ -251,7 +251,7 @@ impl<D, C, H> HandshakeState<D, C, H>
 
     /// Get remote static pubkey, if available.
     pub fn get_rs(&self) -> Option<D::Pubkey> {
-        self.rs
+        self.rs.clone()
     }
 
     /// Get remote semi-ephemeral pubkey.
@@ -260,7 +260,7 @@ impl<D, C, H> HandshakeState<D, C, H>
     ///
     /// Useful for noise-pipes.
     pub fn get_re(&self) -> Option<D::Pubkey> {
-        self.re
+        self.re.clone()
     }
 
     fn perform_dh(&mut self, t: Token) {
@@ -338,23 +338,23 @@ impl<'a, D> HandshakeStateBuilder<'a, D>
         self
     }
 
-    pub fn set_e(&mut self, e: &D::Key) -> &mut Self {
-        self.e = Some(*e);
+    pub fn set_e(&mut self, e: D::Key) -> &mut Self {
+        self.e = Some(e);
         self
     }
 
-    pub fn set_s(&mut self, s: &D::Key) -> &mut Self {
-        self.s = Some(*s);
+    pub fn set_s(&mut self, s: D::Key) -> &mut Self {
+        self.s = Some(s);
         self
     }
 
-    pub fn set_re(&mut self, re: &D::Pubkey) -> &mut Self {
-        self.re = Some(*re);
+    pub fn set_re(&mut self, re: D::Pubkey) -> &mut Self {
+        self.re = Some(re);
         self
     }
 
-    pub fn set_rs(&mut self, rs: &D::Pubkey) -> &mut Self {
-        self.rs = Some(*rs);
+    pub fn set_rs(&mut self, rs: D::Pubkey) -> &mut Self {
+        self.rs = Some(rs);
         self
     }
 
@@ -363,11 +363,11 @@ impl<'a, D> HandshakeStateBuilder<'a, D>
     /// # Panics
     ///
     /// `pattern`, `prologue` and `is_initiator` must be set.
-    pub fn build_handshake_state<C, H>(&self) -> HandshakeState<D, C, H>
+    pub fn build_handshake_state<C, H>(self) -> HandshakeState<D, C, H>
         where C: Cipher,
               H: Hash
     {
-        HandshakeState::new(self.pattern.as_ref().unwrap().clone(),
+        HandshakeState::new(self.pattern.unwrap(),
                             self.is_initiator.unwrap(),
                             self.prologue.unwrap(),
                             self.psk,
