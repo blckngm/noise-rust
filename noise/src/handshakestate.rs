@@ -6,6 +6,12 @@ use traits::{DH, Cipher, Hash, U8Array};
 
 /// Noise handshake state.
 ///
+/// # Notes
+///
+/// `HandshakeState` does not generate new ephemeral keys when seeing
+/// a `E` token. Users of `HandshakeState` are responsible for
+/// generating fresh ephemeral keys.
+///
 /// # Panics
 ///
 /// `HandshakeState` must be used correctly, or its methods will likely panic:
@@ -42,8 +48,6 @@ impl<D, C, H> HandshakeState<D, C, H>
     }
 
     /// Initialize a handshake state.
-    ///
-    /// `HandshakeState` does not generate a new ephemeral key when seeing a `E` toekn (for now?).
     pub fn new(pattern: HandshakePattern,
                is_initiator: bool,
                prologue: &[u8],

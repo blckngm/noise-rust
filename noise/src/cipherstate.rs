@@ -3,6 +3,10 @@ use traits::{Cipher, U8Array};
 /// A `CipherState` can encrypt and decrypt data.
 ///
 /// Mostly like `CipherState` in the spec, but must be created with a key.
+///
+/// # Panics
+///
+/// Encryption and decryption methods will panic if nonce reaches maximum u64, i.e., 2 ^ 64 - 1.
 pub struct CipherState<C: Cipher> {
     key: C::Key,
     n: u64,
@@ -25,10 +29,6 @@ impl<C> CipherState<C>
     }
 
     /// AEAD encryption.
-    ///
-    /// # Panics
-    ///
-    /// When nonce reaches maximum u64, i.e. 2 ^ 64 - 1.
     pub fn encrypt_ad(&mut self, authtext: &[u8], plaintext: &[u8], out: &mut [u8]) {
         C::encrypt(&self.key, self.n, authtext, plaintext, out);
         // This will fail when n == 2 ^ 64 - 1, complying to the spec.
@@ -36,10 +36,6 @@ impl<C> CipherState<C>
     }
 
     /// AEAD decryption.
-    ///
-    /// # Panics
-    ///
-    /// When nonce reaches maximum u64, i.e. 2 ^ 64 - 1.
     pub fn decrypt_ad(&mut self,
                       authtext: &[u8],
                       ciphertext: &[u8],
