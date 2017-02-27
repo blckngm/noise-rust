@@ -24,6 +24,7 @@ pub fn init() {
     sodium_init();
 }
 
+// TODO Just newtype wrap sodiumoxide types. They will zero out memory at Drop.
 #[derive(Clone)]
 pub struct SecretKey([u8; 32]);
 
