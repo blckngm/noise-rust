@@ -4,9 +4,9 @@ license = "Unlicense"
 name = "noise-ring"
 readme = "README.md"
 repository = "https://github.com/sopium/noise-rust"
-version = "0.0.1"
+version = "0.0.2"
 description = "Ring wrappers for nosie-protocol."
-documentation = "https://docs.rs/noise-ring/0.0.1"
+documentation = "https://docs.rs/noise-ring/0.0.2"
 
 [dependencies]
 byteorder = "1.0.0"
@@ -14,4 +14,4 @@ ring = "0.7.1"
 
 [dependencies.noise-protocol]
 path = "../noise"
-version = "0.0.1"
+version = "0.0.2"
