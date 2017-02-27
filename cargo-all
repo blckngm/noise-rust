@@ -1,0 +1,23 @@
+#!/bin/bash
+
+case $1 in
+    doc)
+        cd noise && cargo doc && cd .. &&
+        cd ring && cargo doc && cd .. &&
+        cd sodiumoxide && cargo doc && cd .. &&
+        cd rust-crypto && cargo doc && cd ..
+        ;;
+    fmt)
+        cd noise && cargo fmt -- --write-mode=overwrite && cd .. &&
+        cd ring && cargo fmt -- --write-mode=overwrite && cd .. &&
+        cd sodiumoxide && cargo fmt -- --write-mode=overwrite && cd .. &&
+        cd rust-crypto && cargo fmt -- --write-mode=overwrite && cd .. &&
+        cd vectors && cargo fmt -- --write-mode=overwrite
+        ;;
+    clippy)
+        cd noise && rustup run nightly cargo clippy && cd .. &&
+        cd ring && rustup run nightly cargo clippy && cd .. &&
+        cd sodiumoxide && rustup run nightly cargo clippy && cd .. &&
+        cd rust-crypto && rustup run nightly cargo clippy && cd .. &&
+        cd vectors && rustup run nightly cargo clippy
+esac

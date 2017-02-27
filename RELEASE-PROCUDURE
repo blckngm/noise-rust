@@ -1,0 +1,15 @@
+This is a list of things to do before release, so that I won't forget
+(again):
+
+Bump versions:
+* Version of packages
+* And dependencies
+* Update documentation links
+
+Checks:
+
+* cargo test --all
+( Maybe
+* cargo fmt
+* cargo clippy
+)
