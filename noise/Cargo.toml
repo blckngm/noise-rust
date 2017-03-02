@@ -1,11 +1,11 @@
 [package]
-authors = ["trevp", "sopium"]
+authors = ["trevp", "sopium <sopium@mysterious.site>"]
 license = "Unlicense"
 name = "noise-protocol"
 readme = "README.md"
 repository = "https://github.com/sopium/noise-rust"
-version = "0.0.2"
+version = "0.0.3"
 description = "Noise Protocol Framework implementation."
 keywords = ["noise"]
 categories = ["cryptography"]
-documentation = "https://docs.rs/noise-protocol/0.0.2"
+documentation = "https://docs.rs/noise-protocol/0.0.3"

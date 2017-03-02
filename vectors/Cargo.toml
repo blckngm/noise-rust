@@ -1,6 +1,6 @@
 [package]
 name = "noise-vectors"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["sopium <sopium@mysterious.site>"]
 
 [dev-dependencies]
