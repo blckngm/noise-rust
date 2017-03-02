@@ -21,7 +21,7 @@ Hashes = {
     "SHA256": ["crypto::Sha256", "ring::Sha256", "sodium::Sha256"],
     "SHA512": ["crypto::Sha512", "ring::Sha512", "sodium::Sha512"],
     "BLAKE2s": ["crypto::Blake2s"],
-    "BLAKE2b": ["crypto::Blake2b"],
+    "BLAKE2b": ["crypto::Blake2b", "sodium::Blake2b"],
 }
 
 print("""fn verify_vector(v: Vector) {

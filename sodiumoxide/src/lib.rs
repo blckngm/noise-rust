@@ -1,21 +1,22 @@
 extern crate noise_protocol as noise;
+extern crate libsodium_sys;
 extern crate sodiumoxide;
 
 // TODO Add AEADs, after
 // [https://github.com/dnaq/sodiumoxide/pull/149] is merged.
 
-// TODO BLAKE2b. After sodiumoxide supports it.
-// [https://github.com/dnaq/sodiumoxide/issues/101]
-
 // TODO Use stream hasher, after this is fixed:
 // [https://github.com/dnaq/sodiumoxide/issues/119]
 
+use libsodium_sys::crypto_generichash_blake2b;
 use noise::*;
 use sodiumoxide::crypto::hash::{sha256, sha512};
 use sodiumoxide::crypto::scalarmult::curve25519;
 use sodiumoxide::init as sodium_init;
 use sodiumoxide::randombytes::randombytes_into;
 use sodiumoxide::utils::memzero;
+use std::mem::uninitialized;
+use std::ptr::null;
 
 /// Sodiumoxide init.
 ///
@@ -71,6 +72,12 @@ pub struct Sha256 {
 
 #[derive(Default)]
 pub struct Sha512 {
+    buf: Vec<u8>,
+}
+
+// It seems `crypto_generichash_blake2b_state` is not really usable...
+#[derive(Default)]
+pub struct Blake2b {
     buf: Vec<u8>,
 }
 
@@ -138,5 +145,31 @@ impl Hash for Sha512 {
 
     fn result(&mut self) -> Self::Output {
         sha512::hash(&self.buf).0
+    }
+}
+
+impl Hash for Blake2b {
+    type Block = [u8; 128];
+    type Output = [u8; 64];
+
+    fn name() -> &'static str {
+        "BLAKE2b"
+    }
+
+    fn input(&mut self, data: &[u8]) {
+        self.buf.extend_from_slice(data);
+    }
+
+    fn result(&mut self) -> Self::Output {
+        unsafe {
+            let mut out: Self::Output = uninitialized();
+            crypto_generichash_blake2b(out.as_mut_ptr(),
+                                       64,
+                                       self.buf.as_ptr(),
+                                       self.buf.len() as u64,
+                                       null(),
+                                       0);
+            out
+        }
     }
 }
