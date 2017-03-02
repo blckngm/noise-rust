@@ -9,9 +9,13 @@ description = "Rust-crypto wrappers for noise-protocol."
 documentation = "https://docs.rs/noise-rust-crypto/0.0.2"
 
 [dependencies]
+byteorder = "1.0.0"
 rust-crypto = "0.2.36"
 rand = "0.3"
 
 [dependencies.noise-protocol]
 path = "../noise"
 version = "0.0.2"
+
+[dev-dependencies]
+rustc-serialize = "0.3"

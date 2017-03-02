@@ -29,7 +29,7 @@ table shows which primitives each wrapper supports:
 |-------------|:------:|:-----------:|:-----------------:|:-------:|:-------:|:-------:|:-------:|
 | _ring_      |        | ✔           | ✔                 | ✔       | ✔       |         |         |
 | sodiumoxide | ✔      |             |                   | ✔       | ✔       |         | ✔       |
-| rust-crypto | ✔      |             |                   | ✔       | ✔       | ✔       | ✔       |
+| rust-crypto | ✔      | ✔           | ✔                 | ✔       | ✔       | ✔       | ✔       |
 
 You can also plug in other implementations by implementing the `DH`,
 `Cipher` or `Hash` traits.

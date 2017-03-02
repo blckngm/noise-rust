@@ -13,8 +13,8 @@ DHs = {
 }
 
 Ciphers = {
-    "ChaChaPoly": ["ring::ChaCha20Poly1305"],
-    "AESGCM": ["ring::Aes256Gcm"],
+    "ChaChaPoly": ["ring::ChaCha20Poly1305", "crypto::ChaCha20Poly1305"],
+    "AESGCM": ["ring::Aes256Gcm", "crypto::Aes256Gcm"],
 }
 
 Hashes = {
