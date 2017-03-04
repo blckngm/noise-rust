@@ -21,6 +21,7 @@ use traits::{DH, Cipher, Hash, U8Array};
 /// `write_message` and `read_message` must be called in right turns;
 ///
 /// `write_message` and `read_message` must not be called after `completed`.
+#[derive(Clone)]
 pub struct HandshakeState<D: DH, C: Cipher, H: Hash> {
     symmetric: SymmetricState<C, H>,
     s: Option<D::Key>,
@@ -179,8 +180,9 @@ impl<D, C, H> HandshakeState<D, C, H>
 
     /// Update handshake state and get payload, given a packet.
     ///
-    /// If the packet fails to decrypt, the whole HandshakeState may be in invalid state, and
-    /// should not be used any more. Expect to `get_re` before falling back to `XXfallback`.
+    /// If the packet fails to decrypt, the whole `HandshakeState` may be in invalid state, and
+    /// should not be used anymore. (Perhaps except to `get_re` before falling back to `XXfallback`).
+    /// Consider clone the `HandshakeState` if reusing is desirable.
     pub fn read_message(&mut self, data: &[u8]) -> Result<Vec<u8>, NoiseError> {
         // Check that it is our turn to recv.
         assert!(self.message_index % 2 == if self.is_initiator { 1 } else { 0 });

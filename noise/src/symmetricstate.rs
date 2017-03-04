@@ -1,6 +1,7 @@
 use cipherstate::CipherState;
 use traits::{Cipher, Hash, U8Array};
 
+#[derive(Clone)]
 pub struct SymmetricState<C: Cipher, H: Hash> {
     // Instead of `has_key`, use an `Option`.
     cipherstate: Option<CipherState<C>>,

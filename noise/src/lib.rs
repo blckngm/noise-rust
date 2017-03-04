@@ -14,7 +14,7 @@
 //! crates, e.g., `noise-ring`, `noise-sodiumoxide` and
 //! `noise-rust-crypto`.
 
-#[warn(missing_docs)]
+#![warn(missing_docs)]
 
 mod traits;
 mod cipherstate;

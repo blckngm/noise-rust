@@ -86,7 +86,7 @@ pub trait Cipher {
     /// Name of this cipher function.
     fn name() -> &'static str;
     /// Type of key.
-    type Key: U8Array;
+    type Key: U8Array + Clone;
 
     /// Length of key.
     fn key_len() -> usize {
