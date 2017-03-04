@@ -60,7 +60,7 @@ impl_array!(64);
 impl_array!(128);
 
 /// A DH.
-pub trait DH {
+pub trait DH: Clone {
     /// Type of private key.
     type Key: U8Array + Clone;
     /// Type of pubkey key.
@@ -82,7 +82,7 @@ pub trait DH {
 }
 
 /// An AEAD.
-pub trait Cipher {
+pub trait Cipher: Clone {
     /// Name of this cipher function.
     fn name() -> &'static str;
     /// Type of key.
@@ -117,7 +117,7 @@ pub trait Cipher {
 }
 
 /// A hash function.
-pub trait Hash: Default {
+pub trait Hash: Default + Clone {
     /// Name of the hash function.
     fn name() -> &'static str;
 

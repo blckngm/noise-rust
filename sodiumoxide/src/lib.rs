@@ -63,20 +63,21 @@ impl Drop for SecretKey {
     }
 }
 
+#[derive(Clone)]
 pub enum X25519 {}
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Sha256 {
     buf: Vec<u8>,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Sha512 {
     buf: Vec<u8>,
 }
 
 // It seems `crypto_generichash_blake2b_state` is not really usable...
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Blake2b {
     buf: Vec<u8>,
 }
