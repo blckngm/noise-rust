@@ -307,6 +307,7 @@ pub struct HandshakeStateBuilder<'a, D: DH> {
 impl<'a, D> HandshakeStateBuilder<'a, D>
     where D: DH
 {
+    /// Create a new `HandshakeStateBuilder`.
     pub fn new() -> Self {
         HandshakeStateBuilder {
             pattern: None,
@@ -320,41 +321,51 @@ impl<'a, D> HandshakeStateBuilder<'a, D>
         }
     }
 
+    /// Set handshake pattern.
     pub fn set_pattern(&mut self, p: HandshakePattern) -> &mut Self {
         self.pattern = Some(p);
         self
     }
 
+    /// Set whether the `HandshakeState` is initiator.
     pub fn set_is_initiator(&mut self, is: bool) -> &mut Self {
         self.is_initiator = Some(is);
         self
     }
 
+    /// Set prologue.
     pub fn set_prologue(&mut self, prologue: &'a [u8]) -> &mut Self {
         self.prologue = Some(prologue);
         self
     }
 
+    /// Set pre-shared key.
     pub fn set_psk(&mut self, psk: &'a [u8]) -> &mut Self {
         self.psk = Some(psk);
         self
     }
 
+    /// Set ephemeral key.
     pub fn set_e(&mut self, e: D::Key) -> &mut Self {
         self.e = Some(e);
         self
     }
 
+    /// Set static key.
     pub fn set_s(&mut self, s: D::Key) -> &mut Self {
         self.s = Some(s);
         self
     }
 
+    /// Set peer semi-ephemeral public key.
+    ///
+    /// Usually used in fallback patterns.
     pub fn set_re(&mut self, re: D::Pubkey) -> &mut Self {
         self.re = Some(re);
         self
     }
 
+    /// Set peer static public key.
     pub fn set_rs(&mut self, rs: D::Pubkey) -> &mut Self {
         self.rs = Some(rs);
         self

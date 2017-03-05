@@ -3,7 +3,9 @@ use std::fmt::{self, Display, Formatter};
 /// Noise error type.
 #[derive(Debug)]
 pub enum NoiseError {
+    /// The message is too short.
     TooShort,
+    /// Decryption/authentication failure.
     DecryptionFailed,
 }
 

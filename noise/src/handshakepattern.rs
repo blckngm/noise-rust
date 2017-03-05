@@ -1,10 +1,17 @@
+/// A token in noise message patterns.
 #[derive(Copy, Clone)]
 pub enum Token {
+    /// e.
     E,
+    /// s.
     S,
+    /// ee.
     EE,
+    /// es.
     ES,
+    /// se.
     SE,
+    /// ss.
     SS,
 }
 
@@ -20,18 +27,22 @@ pub struct HandshakePattern {
 }
 
 impl HandshakePattern {
+    /// Get initiator pre-messages.
     pub fn get_pre_i(&self) -> &[Token] {
         &self.pre_i
     }
 
+    /// Get responder pre-messages.
     pub fn get_pre_r(&self) -> &[Token] {
         &self.pre_r
     }
 
+    /// Get message patterns.
     pub fn get_message_patterns(&self) -> &[Vec<Token>] {
         &self.msg_patterns
     }
 
+    /// Get pattern name.
     pub fn get_name(&self) -> &str {
         self.name
     }
