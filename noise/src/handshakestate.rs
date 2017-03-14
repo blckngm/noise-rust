@@ -236,8 +236,6 @@ impl<D, C, H> HandshakeState<D, C, H>
     }
 
     /// Get handshake hash. Useful for e.g., channel binding.
-    ///
-    /// Should be called after handshake is `completed()`.
     pub fn get_hash(&self) -> &[u8] {
         self.symmetric.get_hash()
     }
@@ -263,6 +261,16 @@ impl<D, C, H> HandshakeState<D, C, H>
     /// Useful for noise-pipes.
     pub fn get_re(&self) -> Option<D::Pubkey> {
         self.re.clone()
+    }
+
+    /// Get whether this `HandshakeState` is created as initiator.
+    pub fn get_is_initiator(&self) -> bool {
+        self.is_initiator
+    }
+
+    /// Get handshake pattern this `HandshakeState` uses.
+    pub fn get_pattern(&self) -> &HandshakePattern {
+        &self.pattern
     }
 
     fn perform_dh(&mut self, t: Token) {

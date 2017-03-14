@@ -71,6 +71,11 @@ impl<C> CipherState<C>
         Ok(out)
     }
 
+    /// Get the next value of `n`. Could be used to decide on whether to re-key, etc.
+    pub fn get_next_n(&self) -> u64 {
+        self.n
+    }
+
     /// Get underlying cipher and nonce.
     ///
     /// This is useful for e.g. WireGuard. Because packets may be lost or arrive out of order,
