@@ -6,17 +6,11 @@ use traits::{DH, Cipher, Hash, U8Array};
 
 /// Noise handshake state.
 ///
-/// # Notes
-///
-/// `HandshakeState` does not generate new ephemeral keys when seeing
-/// a `E` token. Users of `HandshakeState` are responsible for
-/// generating fresh ephemeral keys.
-///
 /// # Panics
 ///
 /// `HandshakeState` must be used correctly, or its methods will likely panic:
 ///
-/// Keys required by the handshake pattern must be set;
+/// Static keys required by the handshake pattern must be set;
 ///
 /// `write_message` and `read_message` must be called in right turns;
 ///
@@ -49,23 +43,33 @@ impl<D, C, H> HandshakeState<D, C, H>
     }
 
     /// Initialize a handshake state.
-    pub fn new(pattern: HandshakePattern,
-               is_initiator: bool,
-               prologue: &[u8],
-               psk: Option<&[u8]>,
-               s: Option<D::Key>,
-               e: Option<D::Key>,
-               rs: Option<D::Pubkey>,
-               re: Option<D::Pubkey>)
-               -> Self {
+    ///
+    /// If `e` is `None`, a new ephemeral key will be generated if necessary when `write_message`.
+    ///
+    /// An explicit `e` should only be specified for testing purposes, or in fallback patterns.
+    /// If you do pass in an explicit `e`, `HandshakeState` will use it as is and will not
+    /// generate new ephemeral keys in `write_message`.
+    pub fn new<P, PSK>(pattern: HandshakePattern,
+                       is_initiator: bool,
+                       prologue: P,
+                       psk: Option<PSK>,
+                       s: Option<D::Key>,
+                       e: Option<D::Key>,
+                       rs: Option<D::Pubkey>,
+                       re: Option<D::Pubkey>)
+                       -> Self
+        where P: AsRef<[u8]>,
+              PSK: AsRef<[u8]>
+    {
         let mut symmetric = SymmetricState::new(Self::get_name(psk.is_some(), pattern.get_name())
             .as_bytes());
 
         // Mix in prologue.
-        symmetric.mix_hash(prologue);
+        symmetric.mix_hash(prologue.as_ref());
 
         // Mix in pre-shared key.
         if let Some(psk) = psk {
+            let psk = psk.as_ref();
             assert_eq!(psk.len(), 32);
             symmetric.mix_preshared_key(psk);
         }
@@ -154,8 +158,9 @@ impl<D, C, H> HandshakeState<D, C, H>
         for t in m {
             match t {
                 Token::E => {
-                    // Spec says that we should generate new ephemeral key, but that would make
-                    // testing very difficult.
+                    if self.e.is_none() {
+                        self.e = Some(D::genkey());
+                    }
                     let e_pk = D::pubkey(self.e.as_ref().unwrap());
                     self.symmetric.mix_hash(e_pk.as_slice());
                     if self.symmetric.has_preshared_key() {
@@ -181,7 +186,9 @@ impl<D, C, H> HandshakeState<D, C, H>
     /// Update handshake state and get payload, given a packet.
     ///
     /// If the packet fails to decrypt, the whole `HandshakeState` may be in invalid state, and
-    /// should not be used anymore. (Perhaps except to `get_re` before falling back to `XXfallback`).
+    /// should not be used anymore. (Perhaps except to `get_re` before falling back
+    /// to `XXfallback`).
+    ///
     /// Consider clone the `HandshakeState` if reusing is desirable.
     pub fn read_message(&mut self, data: &[u8]) -> Result<Vec<u8>, NoiseError> {
         // Check that it is our turn to recv.
@@ -354,6 +361,8 @@ impl<'a, D> HandshakeStateBuilder<'a, D>
     }
 
     /// Set ephemeral key.
+    ///
+    /// This is usually not necessary. See doc of `HandshakeState::new()`.
     pub fn set_e(&mut self, e: D::Key) -> &mut Self {
         self.e = Some(e);
         self

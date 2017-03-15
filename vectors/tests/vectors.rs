@@ -106,24 +106,18 @@ fn verify_vector_with<D, C, H>(v: &Vector)
     }
     let pattern = pattern.unwrap();
 
-    // Wow, that's quite some dancing to get to the right type...
-    let ipsk = v.init_psk.as_ref().map(HexString::to_bytes);
-    let ipsk = ipsk.as_ref().map(|x| x.as_slice());
-    let rpsk = v.resp_psk.as_ref().map(HexString::to_bytes);
-    let rpsk = rpsk.as_ref().map(|x| x.as_slice());
-
     let mut h_i = HandshakeState::<D, C, H>::new(pattern.clone(),
                                                  true,
-                                                 v.init_prologue.to_bytes().as_slice(),
-                                                 ipsk,
+                                                 v.init_prologue.to_bytes(),
+                                                 v.init_psk.as_ref().map(HexString::to_bytes),
                                                  v.init_static.as_ref().map(to_dh::<D>),
                                                  Some(to_dh::<D>(&v.init_ephemeral)),
                                                  v.init_remote_static.as_ref().map(to_pubkey::<D>),
                                                  None);
     let mut h_r = HandshakeState::<D, C, H>::new(pattern,
                                                  false,
-                                                 v.resp_prologue.to_bytes().as_slice(),
-                                                 rpsk,
+                                                 v.resp_prologue.to_bytes(),
+                                                 v.resp_psk.as_ref().map(HexString::to_bytes),
                                                  v.resp_static.as_ref().map(to_dh::<D>),
                                                  v.resp_ephemeral.as_ref().map(to_dh::<D>),
                                                  v.resp_remote_static.as_ref().map(to_pubkey::<D>),
