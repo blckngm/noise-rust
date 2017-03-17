@@ -142,9 +142,11 @@ fn verify_vector_with<D, C, H>(v: &Vector)
                 } else {
                     (&mut h_r, &mut h_i)
                 };
-                let c = h_send.write_message(payload);
+                let overhead = h_send.get_next_message_overhead();
+                assert_eq!(payload.len() + overhead, expected_ciphertext.len());
+                let c = h_send.write_message_vec(payload);
                 assert_eq!(c, expected_ciphertext);
-                let p1 = h_recv.read_message(&c).unwrap();
+                let p1 = h_recv.read_message_vec(&c).unwrap();
                 assert_eq!(p1, payload);
             }
             if h_i.completed() {
@@ -224,10 +226,10 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     let mut rh0 = rbuilder.build_handshake_state::<C, H>();
 
     // Abbreviated handshake (IK), should fail.
-    let m0 = ih0.write_message(v.messages[0].payload.to_bytes().as_slice());
+    let m0 = ih0.write_message_vec(v.messages[0].payload.to_bytes().as_slice());
     assert_eq!(m0, v.messages[0].ciphertext.to_bytes().as_slice());
 
-    assert!(rh0.read_message(&m0).is_err());
+    assert!(rh0.read_message_vec(&m0).is_err());
 
     // Build init handshake state.
     let mut ibuilder = HandshakeStateBuilder::<D>::new();
@@ -255,13 +257,13 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     let mut rh1 = rbuilder.build_handshake_state::<C, H>();
 
     // Fallback handshake.
-    let m1 = ih1.write_message(v.messages[1].payload.to_bytes().as_slice());
+    let m1 = ih1.write_message_vec(v.messages[1].payload.to_bytes().as_slice());
     assert_eq!(m1, v.messages[1].ciphertext.to_bytes());
-    rh1.read_message(&m1).unwrap();
+    rh1.read_message_vec(&m1).unwrap();
 
-    let m2 = rh1.write_message(v.messages[2].payload.to_bytes().as_slice());
+    let m2 = rh1.write_message_vec(v.messages[2].payload.to_bytes().as_slice());
     assert_eq!(m2, v.messages[2].ciphertext.to_bytes());
-    ih1.read_message(&m2).unwrap();
+    ih1.read_message_vec(&m2).unwrap();
 
     assert!(ih1.completed());
     assert!(rh1.completed());

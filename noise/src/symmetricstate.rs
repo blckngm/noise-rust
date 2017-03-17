@@ -69,13 +69,6 @@ impl<C, H> SymmetricState<C, H>
         self.mix_hash(out);
     }
 
-    pub fn encrypt_and_hash_vec(&mut self, plaintext: &[u8]) -> Vec<u8> {
-        let mut out =
-            vec![0u8; if self.has_key() { plaintext.len() + 16 } else { plaintext.len() } ];
-        self.encrypt_and_hash(plaintext, &mut out);
-        out
-    }
-
     pub fn decrypt_and_hash(&mut self, data: &[u8], out: &mut [u8]) -> Result<(), ()> {
         if let Some(ref mut c) = self.cipherstate {
             c.decrypt_ad(self.h.as_slice(), data, out)?;
@@ -84,12 +77,6 @@ impl<C, H> SymmetricState<C, H>
         }
         self.mix_hash(data);
         Ok(())
-    }
-
-    pub fn decrypt_and_hash_vec(&mut self, data: &[u8]) -> Result<Vec<u8>, ()> {
-        let mut out = vec![0u8; if self.has_key() { data.len() - 16 } else { data.len() } ];
-        self.decrypt_and_hash(data, &mut out)?;
-        Ok(out)
     }
 
     pub fn split(&self) -> (CipherState<C>, CipherState<C>) {

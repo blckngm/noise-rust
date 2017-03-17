@@ -84,21 +84,6 @@ impl<D, C, H> HandshakeState<D, C, H>
                         symmetric.mix_hash(rs.as_ref().unwrap().as_slice());
                     }
                 }
-                Token::E => {
-                    if is_initiator {
-                        let e = D::pubkey(e.as_ref().unwrap());
-                        symmetric.mix_hash(e.as_slice());
-                        if symmetric.has_preshared_key() {
-                            symmetric.mix_key(e.as_slice());
-                        }
-                    } else {
-                        let re = re.as_ref().unwrap().as_slice();
-                        symmetric.mix_hash(re);
-                        if symmetric.has_preshared_key() {
-                            symmetric.mix_key(re);
-                        }
-                    }
-                }
                 _ => panic!("Unexpected token in pre message"),
             }
         }
@@ -142,8 +127,61 @@ impl<D, C, H> HandshakeState<D, C, H>
         }
     }
 
+    /// Calculate the size overhead of the next message.
+    ///
+    /// # Panics
+    ///
+    /// If these is no more message to read/write, i.e.,
+    /// if the handshake is already completed.
+    pub fn get_next_message_overhead(&self) -> usize {
+        let m = &self.pattern.get_message_patterns()[self.message_index];
+
+        let mut overhead = 0;
+
+        let mut has_key = self.symmetric.has_key();
+
+        for &t in m {
+            match t {
+                Token::E => {
+                    overhead += D::Pubkey::len();
+                    if self.symmetric.has_preshared_key() {
+                        has_key = true;
+                    }
+                }
+                Token::S => {
+                    overhead += D::Pubkey::len();
+                    if has_key {
+                        overhead += 16;
+                    }
+                }
+                _ => {
+                    has_key = true;
+                }
+            }
+        }
+
+        if has_key {
+            overhead += 16
+        }
+
+        overhead
+    }
+
+    /// Like `write_message`, but returns a `Vec`.
+    pub fn write_message_vec(&mut self, payload: &[u8]) -> Vec<u8> {
+        let mut out = vec![0u8; payload.len() + self.get_next_message_overhead()];
+        self.write_message(payload, &mut out);
+        out
+    }
+
     /// Takes a payload and return a packet that you should send to the peer.
-    pub fn write_message(&mut self, payload: &[u8]) -> Vec<u8> {
+    ///
+    /// # Panics
+    ///
+    /// If `out.len() != payload.len() + self.get_next_message_overhead()`.
+    pub fn write_message(&mut self, payload: &[u8], out: &mut [u8]) {
+        debug_assert_eq!(out.len(), payload.len() + self.get_next_message_overhead());
+
         // Check that it is our turn to send.
         assert!(self.message_index % 2 == if self.is_initiator { 0 } else { 1 });
 
@@ -152,8 +190,7 @@ impl<D, C, H> HandshakeState<D, C, H>
         let m = self.pattern.get_message_patterns()[self.message_index].clone();
         self.message_index += 1;
 
-        let mut out = Vec::new();
-
+        let mut cur: usize = 0;
         // Process tokens.
         for t in m {
             match t {
@@ -166,32 +203,45 @@ impl<D, C, H> HandshakeState<D, C, H>
                     if self.symmetric.has_preshared_key() {
                         self.symmetric.mix_key(e_pk.as_slice());
                     }
-                    out.extend_from_slice(e_pk.as_slice());
+                    out[cur..cur + D::Pubkey::len()].copy_from_slice(e_pk.as_slice());
+                    cur += D::Pubkey::len();
                 }
                 Token::S => {
-                    let encrypted_s = self.symmetric
-                        .encrypt_and_hash_vec(D::pubkey(self.s.as_ref().unwrap()).as_slice());
-                    out.extend_from_slice(&encrypted_s);
+                    let len = if self.symmetric.has_key() {
+                        D::Pubkey::len() + 16
+                    } else {
+                        D::Pubkey::len()
+                    };
+
+                    let encrypted_s_out = &mut out[cur..cur + len];
+                    self.symmetric
+                        .encrypt_and_hash(D::pubkey(self.s.as_ref().unwrap()).as_slice(),
+                                          encrypted_s_out);
+                    cur += len;
                 }
                 t => self.perform_dh(t),
             }
         }
 
-        let encrypted_payload = self.symmetric.encrypt_and_hash_vec(payload);
-        out.extend_from_slice(&encrypted_payload);
-
-        out
+        self.symmetric.encrypt_and_hash(payload, &mut out[cur..]);
     }
 
     /// Update handshake state and get payload, given a packet.
     ///
-    /// If the packet fails to decrypt, the whole `HandshakeState` may be in invalid state, and
-    /// should not be used anymore. (Perhaps except to `get_re` before falling back
-    /// to `XXfallback`).
+    /// If the packet fails to decrypt, the whole `HandshakeState` may be in invalid
+    /// state, and should not be used anymore. (Perhaps except to `get_re` before
+    /// falling back to `XXfallback`).
     ///
     /// Consider clone the `HandshakeState` if reusing is desirable.
-    pub fn read_message(&mut self, data: &[u8]) -> Result<Vec<u8>, NoiseError> {
-        // Check that it is our turn to recv.
+    ///
+    /// # Panics
+    ///
+    /// If `out.len() + self.get_next_message_overhead() != data.len()`.
+    ///
+    /// (Notes that this implies `data.len() >= overhead`.)
+    pub fn read_message(&mut self, data: &[u8], out: &mut [u8]) -> Result<(), NoiseError> {
+        debug_assert_eq!(out.len() + self.get_next_message_overhead(), data.len());
+
         assert!(self.message_index % 2 == if self.is_initiator { 1 } else { 0 });
 
         // Get the message pattern.
@@ -200,20 +250,17 @@ impl<D, C, H> HandshakeState<D, C, H>
 
         let mut data = data;
         // Consume the next `n` bytes of data.
-        let mut get = |n| if data.len() >= n {
+        let mut get = |n| {
             let ret = &data[..n];
             data = &data[n..];
-            Ok(ret)
-        } else {
-            Err(NoiseError::TooShort)
+            ret
         };
 
         // Process tokens.
         for t in m {
             match t {
                 Token::E => {
-                    let mut re = D::Pubkey::new();
-                    re.as_mut().copy_from_slice(get(D::Pubkey::len())?);
+                    let re = D::Pubkey::from_slice(get(D::Pubkey::len()));
                     self.symmetric.mix_hash(re.as_slice());
                     if self.symmetric.has_preshared_key() {
                         self.symmetric.mix_key(re.as_slice());
@@ -225,7 +272,7 @@ impl<D, C, H> HandshakeState<D, C, H>
                         D::Pubkey::len() + 16
                     } else {
                         D::Pubkey::len()
-                    })?;
+                    });
                     let mut rs = D::Pubkey::new();
                     self.symmetric.decrypt_and_hash(temp, rs.as_mut())?;
                     self.rs = Some(rs);
@@ -234,7 +281,21 @@ impl<D, C, H> HandshakeState<D, C, H>
             }
         }
 
-        Ok(self.symmetric.decrypt_and_hash_vec(data)?)
+        Ok(self.symmetric.decrypt_and_hash(data, out)?)
+    }
+
+    /// Similar to `read_message`, but returns result as a `Vec`.
+    ///
+    /// Also does not require that `data.len() >= overhead`.
+    pub fn read_message_vec(&mut self, data: &[u8]) -> Result<Vec<u8>, NoiseError> {
+        let overhead = self.get_next_message_overhead();
+        if data.len() < overhead {
+            Err(NoiseError::TooShort)
+        } else {
+            let mut out = vec![0u8; data.len() - overhead];
+            self.read_message(data, &mut out)?;
+            Ok(out)
+        }
     }
 
     /// Whether handshake has completed.
