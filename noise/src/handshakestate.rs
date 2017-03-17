@@ -15,7 +15,6 @@ use traits::{DH, Cipher, Hash, U8Array};
 /// `write_message` and `read_message` must be called in right turns;
 ///
 /// `write_message` and `read_message` must not be called after `completed`.
-#[derive(Clone)]
 pub struct HandshakeState<D: DH, C: Cipher, H: Hash> {
     symmetric: SymmetricState<C, H>,
     s: Option<D::Key>,
@@ -25,6 +24,23 @@ pub struct HandshakeState<D: DH, C: Cipher, H: Hash> {
     is_initiator: bool,
     pattern: HandshakePattern,
     message_index: usize,
+}
+
+impl<D, C, H> Clone for HandshakeState<D, C, H>
+    where D: DH, C: Cipher, H: Hash
+{
+    fn clone(&self) -> Self {
+        Self {
+            symmetric: self.symmetric.clone(),
+            s: self.s.as_ref().map(U8Array::clone),
+            e: self.e.as_ref().map(U8Array::clone),
+            rs: self.rs.as_ref().map(U8Array::clone),
+            re: self.re.as_ref().map(U8Array::clone),
+            is_initiator: self.is_initiator,
+            pattern: self.pattern.clone(),
+            message_index: self.message_index,
+        }
+    }
 }
 
 impl<D, C, H> HandshakeState<D, C, H>
@@ -319,7 +335,7 @@ impl<D, C, H> HandshakeState<D, C, H>
 
     /// Get remote static pubkey, if available.
     pub fn get_rs(&self) -> Option<D::Pubkey> {
-        self.rs.clone()
+        self.rs.as_ref().map(U8Array::clone)
     }
 
     /// Get remote semi-ephemeral pubkey.
@@ -328,7 +344,7 @@ impl<D, C, H> HandshakeState<D, C, H>
     ///
     /// Useful for noise-pipes.
     pub fn get_re(&self) -> Option<D::Pubkey> {
-        self.re.clone()
+        self.re.as_ref().map(U8Array::clone)
     }
 
     /// Get whether this `HandshakeState` is created as initiator.

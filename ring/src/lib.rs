@@ -7,18 +7,14 @@ use noise::{Cipher, Hash, U8Array};
 use ring::aead;
 use ring::digest;
 
-#[derive(Clone)]
 pub enum Aes256Gcm {}
 
-#[derive(Clone)]
 pub enum ChaCha20Poly1305 {}
 
-#[derive(Clone)]
 pub struct Sha256 {
     context: digest::Context,
 }
 
-#[derive(Clone)]
 pub struct Sha512 {
     context: digest::Context,
 }

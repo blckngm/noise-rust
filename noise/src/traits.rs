@@ -4,7 +4,7 @@
 
 // Use this trait so that we don't have to use `Vec` for some semi-fixed length buffers and
 // input/output types.
-pub trait U8Array {
+pub trait U8Array: Sized {
     /// Create a new array filled with all zeros.
     fn new() -> Self;
     /// Create a new array filled with a same value.
@@ -21,6 +21,11 @@ pub trait U8Array {
     fn as_slice(&self) -> &[u8];
     /// As mutable slice.
     fn as_mut(&mut self) -> &mut [u8];
+    // Cannot just impl `Clone`, that will conflict with [u8; 32].
+    /// Clone.
+    fn clone(&self) -> Self {
+        Self::from_slice(self.as_slice())
+    }
 }
 
 macro_rules! impl_array {
@@ -60,13 +65,13 @@ impl_array!(64);
 impl_array!(128);
 
 /// A DH.
-pub trait DH: Clone {
+pub trait DH {
     /// Type of private key.
-    type Key: U8Array + Clone;
+    type Key: U8Array;
     /// Type of pubkey key.
-    type Pubkey: U8Array + Clone;
+    type Pubkey: U8Array;
     /// Type of output.
-    type Output: U8Array + Clone;
+    type Output: U8Array;
 
     /// Name of this DH function, e.g., “25519”.
     fn name() -> &'static str;
@@ -82,11 +87,11 @@ pub trait DH: Clone {
 }
 
 /// An AEAD.
-pub trait Cipher: Clone {
+pub trait Cipher {
     /// Name of this cipher function.
     fn name() -> &'static str;
     /// Type of key.
-    type Key: U8Array + Clone;
+    type Key: U8Array;
 
     /// Length of key.
     fn key_len() -> usize {
@@ -117,14 +122,14 @@ pub trait Cipher: Clone {
 }
 
 /// A hash function.
-pub trait Hash: Default + Clone {
+pub trait Hash: Default {
     /// Name of the hash function.
     fn name() -> &'static str;
 
     /// Type of a block.
     type Block: U8Array;
     /// Type of output.
-    type Output: U8Array + Copy;
+    type Output: U8Array;
 
     /// Length of block.
     fn block_len() -> usize {

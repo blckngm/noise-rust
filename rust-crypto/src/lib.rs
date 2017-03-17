@@ -18,7 +18,6 @@ use crypto::util::{fixed_time_eq, secure_memset};
 use noise::*;
 use rand::{OsRng, Rng};
 
-#[derive(Clone)]
 pub struct SecretKey([u8; 32]);
 
 impl U8Array for SecretKey {
@@ -55,31 +54,24 @@ impl Drop for SecretKey {
     }
 }
 
-#[derive(Clone)]
 pub enum X25519 {}
 
-#[derive(Clone)]
 pub enum Aes256Gcm {}
 
-#[derive(Clone)]
 pub enum ChaCha20Poly1305 {}
 
-#[derive(Clone)]
 pub struct Sha256 {
     hasher: sha2::Sha256,
 }
 
-#[derive(Clone)]
 pub struct Sha512 {
     hasher: sha2::Sha512,
 }
 
-#[derive(Clone)]
 pub struct Blake2b {
     hasher: blake2b::Blake2b,
 }
 
-#[derive(Clone)]
 pub struct Blake2s {
     hasher: blake2s::Blake2s,
 }

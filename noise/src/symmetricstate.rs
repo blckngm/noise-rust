@@ -1,13 +1,25 @@
 use cipherstate::CipherState;
 use traits::{Cipher, Hash, U8Array};
 
-#[derive(Clone)]
 pub struct SymmetricState<C: Cipher, H: Hash> {
     // Instead of `has_key`, use an `Option`.
     cipherstate: Option<CipherState<C>>,
     h: H::Output,
     ck: H::Output,
     has_preshared_key: bool,
+}
+
+impl<C, H> Clone for SymmetricState<C, H>
+    where C: Cipher, H: Hash
+{
+    fn clone(&self) -> Self {
+        Self {
+            cipherstate: self.cipherstate.clone(),
+            h: self.h.clone(),
+            ck: self.ck.clone(),
+            has_preshared_key: self.has_preshared_key,
+        }
+    }
 }
 
 impl<C, H> SymmetricState<C, H>
@@ -26,7 +38,7 @@ impl<C, H> SymmetricState<C, H>
 
         SymmetricState {
             cipherstate: None,
-            ck: h,
+            ck: h.clone(),
             h: h,
             has_preshared_key: false,
         }

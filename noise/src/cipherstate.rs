@@ -7,10 +7,20 @@ use traits::{Cipher, U8Array};
 /// # Panics
 ///
 /// Encryption and decryption methods will panic if nonce reaches maximum u64, i.e., 2 ^ 64 - 1.
-#[derive(Clone)]
 pub struct CipherState<C: Cipher> {
     key: C::Key,
     n: u64,
+}
+
+impl<C> Clone for CipherState<C>
+    where C: Cipher
+{
+    fn clone(&self) -> Self {
+        Self {
+            key: self.key.clone(),
+            n: self.n,
+        }
+    }
 }
 
 impl<C> CipherState<C>
