@@ -10,21 +10,19 @@ trevp's [screech](https://github.com/trevp/screech).
 
 ## Status
 
+Protocol revision: 31.
+
 All basic patterns and `XXfallback` are implemented. Vectors from
-noise-c and cacophony are passed.
-
-Please test and review.
-
-Perhaps don't use for security critical purposes (yet)!
+`noise-c` and `cacophony` are successfully verified.
 
 ## Crates
 
-The `noise-protocol` crate contains the abstract implementation of the
-protocol framework. Several sibling crates, namely
-`noise-sodiumoxide`, `noise-ring` and `noise-rust-crypto`, provide
-implementations of the crypto primitives needed by
-`noise-protocol`. They are wrappers around `sodiumoxide`, _ring_ and
-`rust-crypto`, respectively.
+This repository contains several crates. The `noise-protocol` crate
+contains the abstract implementation of the protocol
+framework. Several sibling crates, namely `noise-sodiumoxide`,
+`noise-ring` and `noise-rust-crypto`, provide concrete implementations
+of the needed crypto primitives. They are wrappers around
+`sodiumoxide`, _ring_ and `rust-crypto`, respectively.
 
 The following table shows what primitives each of these crates
 supports:
@@ -35,9 +33,12 @@ supports:
 | sodiumoxide | ✔      |             |                   | ✔       | ✔       |         | ✔       |
 | rust-crypto | ✔      | ✔           | ✔                 | ✔       | ✔       | ✔       | ✔       |
 
-Although `rust-crypto` supports all primitives, it “has not been
-thoroughly audited for correctness”, “so any use where security is
-important is not recommended at this time”.
+You can also plug in other primitive implementations by implementing the `DH`,
+`Cipher` and `Hash` traits.
 
-And you are not restricted to these libraries. You can easily plug in
-other libraries by implementing the `DH`, `Cipher` and `Hash` traits.
+## `no_std` usage
+
+The `noise-protocol` crate supports `no_std`, if default features are
+disabled.
+
+The `noise-ring` crate supports `no_std`.
