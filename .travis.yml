@@ -19,5 +19,5 @@ install:
 
 script:
   - cd noise && cargo check --no-default-features
-  - cd vectors/tests/ && python3 gen.py > impls
+  - cd ../vectors/tests/ && python3 gen.py > impls
   - cargo test --all --verbose
