@@ -8,7 +8,7 @@ extern crate sodiumoxide;
 // TODO Use stream hasher, after this is fixed:
 // [https://github.com/dnaq/sodiumoxide/issues/119]
 
-use libsodium_sys::crypto_generichash_blake2b;
+use libsodium_sys::*;
 use noise::*;
 use sodiumoxide::crypto::hash::{sha256, sha512};
 use sodiumoxide::crypto::scalarmult::curve25519;
