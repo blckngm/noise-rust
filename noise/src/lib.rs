@@ -15,6 +15,7 @@
 //! `noise-rust-crypto`.
 
 #![warn(missing_docs)]
+#![cfg_attr(not(feature = "use_std"), no_std)]
 
 mod traits;
 mod cipherstate;

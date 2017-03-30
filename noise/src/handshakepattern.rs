@@ -1,3 +1,7 @@
+extern crate arrayvec;
+
+use self::arrayvec::ArrayVec;
+
 /// A token in noise message patterns.
 #[derive(Copy, Clone)]
 pub enum Token {
@@ -20,9 +24,9 @@ use self::Token::*;
 /// Noise handshake pattern.
 #[derive(Clone)]
 pub struct HandshakePattern {
-    pre_i: Vec<Token>,
-    pre_r: Vec<Token>,
-    msg_patterns: Vec<Vec<Token>>,
+    pre_i: ArrayVec<[Token; 4]>,
+    pre_r: ArrayVec<[Token; 4]>,
+    msg_patterns: ArrayVec<[ArrayVec<[Token; 8]>; 8]>,
     name: &'static str,
 }
 
@@ -38,14 +42,35 @@ impl HandshakePattern {
     }
 
     /// Get message patterns.
-    pub fn get_message_patterns(&self) -> &[Vec<Token>] {
-        &self.msg_patterns
+    pub fn get_message_pattern(&self, i: usize) -> &[Token] {
+        &self.msg_patterns[i]
+    }
+
+    /// Get number of message patterns.
+    pub fn get_message_patterns_len(&self) -> usize {
+        self.msg_patterns.len()
     }
 
     /// Get pattern name.
     pub fn get_name(&self) -> &str {
         self.name
     }
+}
+
+macro_rules! vec {
+    () => {
+        ArrayVec::new()
+    };
+    ( $( $x:expr ),* ) => {
+        {
+            let mut temp_vec = ArrayVec::new();
+            $(
+                let push_result = temp_vec.push($x);
+                assert!(push_result.is_none());
+            )*
+            temp_vec
+        }
+    };
 }
 
 /// The `Noise_N` pattern.

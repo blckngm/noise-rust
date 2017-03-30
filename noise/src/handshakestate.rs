@@ -1,3 +1,8 @@
+extern crate arrayvec;
+extern crate core;
+
+use self::arrayvec::ArrayString;
+use self::core::fmt::Write;
 use cipherstate::CipherState;
 use error::NoiseError;
 use handshakepattern::{Token, HandshakePattern};
@@ -49,13 +54,15 @@ impl<D, C, H> HandshakeState<D, C, H>
           H: Hash
 {
     /// Get protocol name, e.g. Noise_IK_25519_ChaChaPoly_BLAKE2s.
-    pub fn get_name(has_psk: bool, pattern_name: &str) -> String {
-        format!("Noise{}_{}_{}_{}_{}",
-                if has_psk { "PSK" } else { "" },
-                pattern_name,
-                D::name(),
-                C::name(),
-                H::name())
+    fn get_name(has_psk: bool, pattern_name: &str) -> ArrayString<[u8; 64]> {
+        let mut ret = ArrayString::new();
+        write!(&mut ret, "Noise{}_{}_{}_{}_{}",
+               if has_psk { "PSK" } else { "" },
+               pattern_name,
+               D::name(),
+               C::name(),
+               H::name()).unwrap();
+        ret
     }
 
     /// Initialize a handshake state.
@@ -150,7 +157,7 @@ impl<D, C, H> HandshakeState<D, C, H>
     /// If these is no more message to read/write, i.e.,
     /// if the handshake is already completed.
     pub fn get_next_message_overhead(&self) -> usize {
-        let m = &self.pattern.get_message_patterns()[self.message_index];
+        let m = self.pattern.get_message_pattern(self.message_index);
 
         let mut overhead = 0;
 
@@ -184,6 +191,7 @@ impl<D, C, H> HandshakeState<D, C, H>
     }
 
     /// Like `write_message`, but returns a `Vec`.
+    #[cfg(feature = "use_std")]
     pub fn write_message_vec(&mut self, payload: &[u8]) -> Vec<u8> {
         let mut out = vec![0u8; payload.len() + self.get_next_message_overhead()];
         self.write_message(payload, &mut out);
@@ -203,13 +211,13 @@ impl<D, C, H> HandshakeState<D, C, H>
 
         // Get the message pattern.
         // Clone to make the borrow check happy.
-        let m = self.pattern.get_message_patterns()[self.message_index].clone();
+        let m = self.pattern.get_message_pattern(self.message_index);
         self.message_index += 1;
 
         let mut cur: usize = 0;
         // Process tokens.
         for t in m {
-            match t {
+            match *t {
                 Token::E => {
                     if self.e.is_none() {
                         self.e = Some(D::genkey());
@@ -235,7 +243,10 @@ impl<D, C, H> HandshakeState<D, C, H>
                                           encrypted_s_out);
                     cur += len;
                 }
-                t => self.perform_dh(t),
+                t => {
+                    let dh_result = self.perform_dh(t);
+                    self.symmetric.mix_key(dh_result.as_slice());
+                }
             }
         }
 
@@ -261,7 +272,7 @@ impl<D, C, H> HandshakeState<D, C, H>
         assert!(self.message_index % 2 == if self.is_initiator { 1 } else { 0 });
 
         // Get the message pattern.
-        let m = self.pattern.get_message_patterns()[self.message_index].clone();
+        let m = self.pattern.get_message_pattern(self.message_index);
         self.message_index += 1;
 
         let mut data = data;
@@ -274,7 +285,7 @@ impl<D, C, H> HandshakeState<D, C, H>
 
         // Process tokens.
         for t in m {
-            match t {
+            match *t {
                 Token::E => {
                     let re = D::Pubkey::from_slice(get(D::Pubkey::len()));
                     self.symmetric.mix_hash(re.as_slice());
@@ -293,7 +304,10 @@ impl<D, C, H> HandshakeState<D, C, H>
                     self.symmetric.decrypt_and_hash(temp, rs.as_mut())?;
                     self.rs = Some(rs);
                 }
-                t => self.perform_dh(t),
+                t => {
+                    let dh_result = self.perform_dh(t);
+                    self.symmetric.mix_key(dh_result.as_slice());
+                }
             }
         }
 
@@ -303,6 +317,7 @@ impl<D, C, H> HandshakeState<D, C, H>
     /// Similar to `read_message`, but returns result as a `Vec`.
     ///
     /// Also does not require that `data.len() >= overhead`.
+    #[cfg(feature = "use_std")]
     pub fn read_message_vec(&mut self, data: &[u8]) -> Result<Vec<u8>, NoiseError> {
         let overhead = self.get_next_message_overhead();
         if data.len() < overhead {
@@ -316,7 +331,7 @@ impl<D, C, H> HandshakeState<D, C, H>
 
     /// Whether handshake has completed.
     pub fn completed(&self) -> bool {
-        self.message_index == self.pattern.get_message_patterns().len()
+        self.message_index == self.pattern.get_message_patterns_len()
     }
 
     /// Get handshake hash. Useful for e.g., channel binding.
@@ -357,10 +372,10 @@ impl<D, C, H> HandshakeState<D, C, H>
         &self.pattern
     }
 
-    fn perform_dh(&mut self, t: Token) {
+    fn perform_dh(&self, t: Token) -> D::Output {
         let dh = |a: Option<&D::Key>, b: Option<&D::Pubkey>| D::dh(a.unwrap(), b.unwrap());
 
-        let k = match t {
+        match t {
             Token::EE => dh(self.e.as_ref(), self.re.as_ref()),
             Token::ES => {
                 if self.is_initiator {
@@ -378,9 +393,7 @@ impl<D, C, H> HandshakeState<D, C, H>
             }
             Token::SS => dh(self.s.as_ref(), self.rs.as_ref()),
             _ => unreachable!(),
-        };
-
-        self.symmetric.mix_key(k.as_slice());
+        }
     }
 }
 

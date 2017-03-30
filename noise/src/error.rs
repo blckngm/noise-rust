@@ -1,4 +1,6 @@
-use std::fmt::{self, Display, Formatter};
+extern crate core;
+
+use self::core::fmt::{self, Display, Formatter};
 
 /// Noise error type.
 #[derive(Debug)]
@@ -16,7 +18,7 @@ impl From<()> for NoiseError {
 }
 
 impl Display for NoiseError {
-    fn fmt(&self, f: &mut Formatter) -> ::std::result::Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut Formatter) -> self::core::result::Result<(), fmt::Error> {
         match *self {
             NoiseError::TooShort => f.write_str("Message too short"),
             NoiseError::DecryptionFailed => f.write_str("Decryption failed"),
@@ -24,6 +26,7 @@ impl Display for NoiseError {
     }
 }
 
+#[cfg(feature = "use_std")]
 impl ::std::error::Error for NoiseError {
     fn description(&self) -> &str {
         match *self {

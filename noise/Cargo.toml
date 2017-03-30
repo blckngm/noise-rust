@@ -9,3 +9,10 @@ description = "Noise Protocol Framework implementation."
 keywords = ["noise"]
 categories = ["cryptography"]
 documentation = "https://docs.rs/noise-protocol/0.0.3"
+
+[dependencies]
+arrayvec = { version = "0.3.22", default-features = false }
+
+[features]
+default = ["use_std"]
+use_std = []

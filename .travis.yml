@@ -18,5 +18,6 @@ install:
   - export PATH=$HOME/.cargo/bin/:$PATH
 
 script:
+  - cd noise && cargo check --no-default-features
   - cd vectors/tests/ && python3 gen.py > impls
   - cargo test --all --verbose

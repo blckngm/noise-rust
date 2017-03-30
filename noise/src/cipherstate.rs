@@ -63,6 +63,7 @@ impl<C> CipherState<C>
     }
 
     /// Encryption, returns ciphertext as `Vec<u8>`.
+    #[cfg(feature = "use_std")]
     pub fn encrypt_vec(&mut self, plaintext: &[u8]) -> Vec<u8> {
         let mut out = vec![0u8; plaintext.len() + 16];
         self.encrypt(plaintext, &mut out);
@@ -75,6 +76,7 @@ impl<C> CipherState<C>
     }
 
     /// Decryption, returns plaintext as `Vec<u8>`.
+    #[cfg(feature = "use_std")]
     pub fn decrypt_vec(&mut self, ciphertext: &[u8]) -> Result<Vec<u8>, ()> {
         let mut out = vec![0u8; ciphertext.len() - 16];
         self.decrypt(ciphertext, &mut out)?;

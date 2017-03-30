@@ -1,3 +1,5 @@
+#![no_std]
+
 extern crate byteorder;
 extern crate noise_protocol as noise;
 extern crate ring;
