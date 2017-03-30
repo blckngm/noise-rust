@@ -103,10 +103,16 @@ pub struct Sha512 {
     buf: Vec<u8>,
 }
 
-// It seems `crypto_generichash_blake2b_state` is not really usable...
-#[derive(Default)]
 pub struct Blake2b {
-    buf: Vec<u8>,
+    // TODO: 64-byte alignment.
+    // crypto_generichash_statebytes() is 384, as of libsodium 1.0.8.
+    state: [u8; 384],
+}
+
+#[cfg(test)]
+#[test]
+fn test_blake2b_state_size() {
+    assert!(::std::mem::size_of::<Blake2b>() >= unsafe { crypto_generichash_statebytes() });
 }
 
 impl DH for X25519 {
@@ -174,6 +180,18 @@ impl Hash for Sha512 {
     }
 }
 
+impl Default for Blake2b {
+    fn default() -> Self {
+        unsafe {
+            let mut b: Blake2b = uninitialized();
+            crypto_generichash_init(b.state.as_mut_ptr() as *mut _,
+                                    null(), 0,
+                                    64);
+            b
+        }
+    }
+}
+
 impl Hash for Blake2b {
     type Block = [u8; 128];
     type Output = Sensitive<[u8; 64]>;
@@ -183,18 +201,18 @@ impl Hash for Blake2b {
     }
 
     fn input(&mut self, data: &[u8]) {
-        self.buf.extend_from_slice(data);
+        unsafe {
+            crypto_generichash_update(self.state.as_mut_ptr() as *mut _,
+                                      data.as_ptr(),
+                                      data.len() as u64);
+        }
     }
 
     fn result(&mut self) -> Self::Output {
         unsafe {
             let mut out: Self::Output = uninitialized();
-            crypto_generichash_blake2b(out.as_mut().as_mut_ptr(),
-                                       64,
-                                       self.buf.as_ptr(),
-                                       self.buf.len() as u64,
-                                       null(),
-                                       0);
+            crypto_generichash_final(self.state.as_mut_ptr() as *mut _,
+                                     out.as_mut().as_mut_ptr(), 64);
             out
         }
     }
