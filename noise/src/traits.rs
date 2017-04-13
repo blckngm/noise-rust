@@ -122,9 +122,10 @@ pub trait Cipher {
 
     /// Rekey. Returns a new cipher key as a pseudorandom function of k.
     fn rekey(k: &Self::Key) -> Self::Key {
-        let mut k1 = Self::Key::new();
-        Self::encrypt(&k, 0u64.wrapping_sub(1), &[], &[0; 32], k1.as_mut());
-        k1
+        // XXX: `k1` is not zeroed.
+        let mut k1 = [0u8; 48];
+        Self::encrypt(k, 0u64.wrapping_sub(1), &[], &[0; 32], &mut k1);
+        Self::Key::from_slice(&k1[..32])
     }
 }
 
