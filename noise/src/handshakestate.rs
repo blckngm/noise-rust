@@ -197,7 +197,11 @@ impl<D, C, H> HandshakeState<D, C, H>
         Ok(out)
     }
 
-    /// Takes a payload and return a packet that you should send to the peer.
+    /// Takes a payload and write the generated handshake message to
+    /// `out`.
+    ///
+    /// This method will fail (returns `Err`) iff DH function fails,
+    /// due to, e.g., invalid public keys.
     ///
     /// # Panics
     ///
@@ -253,13 +257,14 @@ impl<D, C, H> HandshakeState<D, C, H>
         Ok(())
     }
 
-    /// Update handshake state and get payload, given a packet.
+    /// Takes a handshake message, process it and update our internal
+    /// state, and write the encapsulated payload to `out`.
     ///
-    /// If the packet fails to decrypt, the whole `HandshakeState` may be in invalid
-    /// state, and should not be used anymore. (Perhaps except to `get_re` before
-    /// falling back to `XXfallback`).
-    ///
-    /// Consider clone the `HandshakeState` if reusing is desirable.
+    /// If the message fails to decrypt, the whole `HandshakeState`
+    /// may be in invalid state, and should not be used
+    /// anymore. (Except to `get_re` before falling back to
+    /// `XXfallback`). Consider cloning the `HandshakeState` if
+    /// reusing is desirable.
     ///
     /// # Panics
     ///
