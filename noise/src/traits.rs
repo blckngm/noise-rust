@@ -119,6 +119,13 @@ pub trait Cipher {
                ciphertext: &[u8],
                out: &mut [u8])
                -> Result<(), ()>;
+
+    /// Rekey. Returns a new cipher key as a pseudorandom function of k.
+    fn rekey(k: &Self::Key) -> Self::Key {
+        let mut k1 = Self::Key::new();
+        Self::encrypt(&k, 0u64.wrapping_sub(1), &[], &[0; 32], k1.as_mut());
+        k1
+    }
 }
 
 /// A hash function.

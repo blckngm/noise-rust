@@ -39,6 +39,11 @@ impl<C> CipherState<C>
         }
     }
 
+    /// Rekey. Set our key to REKEY(old key).
+    pub fn rekey(&mut self) {
+        self.key = C::rekey(&self.key);
+    }
+
     /// AEAD encryption.
     pub fn encrypt_ad(&mut self, authtext: &[u8], plaintext: &[u8], out: &mut [u8]) {
         C::encrypt(&self.key, self.n, authtext, plaintext, out);
