@@ -83,7 +83,7 @@ pub trait DH {
     fn pubkey(&Self::Key) -> Self::Pubkey;
 
     /// Perform DH key exchange.
-    fn dh(&Self::Key, &Self::Pubkey) -> Self::Output;
+    fn dh(&Self::Key, &Self::Pubkey) -> Result<Self::Output, ()>;
 }
 
 /// An AEAD.

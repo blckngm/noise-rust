@@ -192,10 +192,10 @@ impl<D, C, H> HandshakeState<D, C, H>
 
     /// Like `write_message`, but returns a `Vec`.
     #[cfg(feature = "use_std")]
-    pub fn write_message_vec(&mut self, payload: &[u8]) -> Vec<u8> {
+    pub fn write_message_vec(&mut self, payload: &[u8]) -> Result<Vec<u8>, ()> {
         let mut out = vec![0u8; payload.len() + self.get_next_message_overhead()];
-        self.write_message(payload, &mut out);
-        out
+        self.write_message(payload, &mut out)?;
+        Ok(out)
     }
 
     /// Takes a payload and return a packet that you should send to the peer.
@@ -203,7 +203,7 @@ impl<D, C, H> HandshakeState<D, C, H>
     /// # Panics
     ///
     /// If `out.len() != payload.len() + self.get_next_message_overhead()`.
-    pub fn write_message(&mut self, payload: &[u8], out: &mut [u8]) {
+    pub fn write_message(&mut self, payload: &[u8], out: &mut [u8]) -> Result<(), ()> {
         debug_assert_eq!(out.len(), payload.len() + self.get_next_message_overhead());
 
         // Check that it is our turn to send.
@@ -244,13 +244,14 @@ impl<D, C, H> HandshakeState<D, C, H>
                     cur += len;
                 }
                 t => {
-                    let dh_result = self.perform_dh(t);
+                    let dh_result = self.perform_dh(t)?;
                     self.symmetric.mix_key(dh_result.as_slice());
                 }
             }
         }
 
         self.symmetric.encrypt_and_hash(payload, &mut out[cur..]);
+        Ok(())
     }
 
     /// Update handshake state and get payload, given a packet.
@@ -305,7 +306,7 @@ impl<D, C, H> HandshakeState<D, C, H>
                     self.rs = Some(rs);
                 }
                 t => {
-                    let dh_result = self.perform_dh(t);
+                    let dh_result = self.perform_dh(t)?;
                     self.symmetric.mix_key(dh_result.as_slice());
                 }
             }
@@ -372,7 +373,7 @@ impl<D, C, H> HandshakeState<D, C, H>
         &self.pattern
     }
 
-    fn perform_dh(&self, t: Token) -> D::Output {
+    fn perform_dh(&self, t: Token) -> Result<D::Output, ()> {
         let dh = |a: Option<&D::Key>, b: Option<&D::Pubkey>| D::dh(a.unwrap(), b.unwrap());
 
         match t {

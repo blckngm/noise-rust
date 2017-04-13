@@ -137,12 +137,10 @@ impl DH for X25519 {
         curve25519::scalarmult_base(&k.0).0
     }
 
-    fn dh(k: &Self::Key, pk: &Self::Pubkey) -> Self::Output {
+    /// Returns `Err(())` if DH output is all-zero.
+    fn dh(k: &Self::Key, pk: &Self::Pubkey) -> Result<Self::Output, ()> {
         let pk = curve25519::GroupElement(*pk);
-        // Libsodium returns error when DH result is all-zero, but noise explicitly permits that.
-        // See section 9.1 of the spec:
-        // http://www.noiseprotocol.org/noise.html#dummy-static-public-keys
-        Sensitive(curve25519::scalarmult(&k.0, &pk).map(|x| x.0).unwrap_or([0u8; 32]))
+        curve25519::scalarmult(&k.0, &pk).map(|x| Sensitive(x.0))
     }
 }
 

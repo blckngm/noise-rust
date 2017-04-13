@@ -100,8 +100,9 @@ impl DH for X25519 {
         curve25519_base(k.as_slice())
     }
 
-    fn dh(k: &Self::Key, pk: &Self::Pubkey) -> Self::Output {
-        curve25519(k.as_slice(), pk.as_slice())
+    /// Always success.
+    fn dh(k: &Self::Key, pk: &Self::Pubkey) -> Result<Self::Output, ()> {
+        Ok(curve25519(k.as_slice(), pk.as_slice()))
     }
 }
 
