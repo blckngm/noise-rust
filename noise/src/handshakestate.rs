@@ -53,7 +53,7 @@ impl<D, C, H> HandshakeState<D, C, H>
           H: Hash
 {
     /// Get protocol name, e.g. Noise_IK_25519_ChaChaPoly_BLAKE2s.
-    fn get_name(has_psk: bool, pattern_name: &str) -> ArrayString<[u8; 64]> {
+    fn get_name(has_psk: bool, pattern_name: &str) -> ArrayString<[u8; 256]> {
         let mut ret = ArrayString::new();
         write!(&mut ret, "Noise{}_{}_{}_{}_{}",
                if has_psk { "PSK" } else { "" },
