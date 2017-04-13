@@ -4,7 +4,6 @@ extern crate core;
 use self::arrayvec::ArrayString;
 use self::core::fmt::Write;
 use cipherstate::CipherState;
-use error::NoiseError;
 use handshakepattern::{Token, HandshakePattern};
 use symmetricstate::SymmetricState;
 use traits::{DH, Cipher, Hash, U8Array};
@@ -267,7 +266,7 @@ impl<D, C, H> HandshakeState<D, C, H>
     /// If `out.len() + self.get_next_message_overhead() != data.len()`.
     ///
     /// (Notes that this implies `data.len() >= overhead`.)
-    pub fn read_message(&mut self, data: &[u8], out: &mut [u8]) -> Result<(), NoiseError> {
+    pub fn read_message(&mut self, data: &[u8], out: &mut [u8]) -> Result<(), ()> {
         debug_assert_eq!(out.len() + self.get_next_message_overhead(), data.len());
 
         assert!(self.message_index % 2 == if self.is_initiator { 1 } else { 0 });
@@ -319,10 +318,10 @@ impl<D, C, H> HandshakeState<D, C, H>
     ///
     /// Also does not require that `data.len() >= overhead`.
     #[cfg(feature = "use_std")]
-    pub fn read_message_vec(&mut self, data: &[u8]) -> Result<Vec<u8>, NoiseError> {
+    pub fn read_message_vec(&mut self, data: &[u8]) -> Result<Vec<u8>, ()> {
         let overhead = self.get_next_message_overhead();
         if data.len() < overhead {
-            Err(NoiseError::TooShort)
+            Err(())
         } else {
             let mut out = vec![0u8; data.len() - overhead];
             self.read_message(data, &mut out)?;

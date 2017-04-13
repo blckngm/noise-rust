@@ -22,10 +22,8 @@ mod cipherstate;
 mod symmetricstate;
 mod handshakestate;
 mod handshakepattern;
-mod error;
 
 pub use cipherstate::CipherState;
-pub use error::NoiseError;
 pub use traits::{U8Array, DH, Cipher, Hash};
 
 /// Handshake patterns.
