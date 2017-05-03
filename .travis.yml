@@ -1,8 +1,4 @@
 sudo: false
-addons:
-  apt:
-    packages:
-      - python3
 language: rust
 rust:
   - stable
