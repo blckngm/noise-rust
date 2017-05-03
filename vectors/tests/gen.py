@@ -2,12 +2,6 @@
 
 # This should probably be implemented as a Rust macro...
 
-# And even if using python, it should be called from build.rs...
-
-# For now, you have to run this manually...
-
-# Sorry.
-
 DHs = {
     "25519": ["sodium::X25519", "crypto::X25519"],
 }

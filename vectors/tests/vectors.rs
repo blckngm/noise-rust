@@ -298,7 +298,7 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     }
 }
 
-include!("impls");
+include!(concat!(env!("OUT_DIR"), "/crypto_impls.rs"));
 
 #[test]
 fn noise_c_basic_vectors() {

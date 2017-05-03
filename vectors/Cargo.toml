@@ -2,6 +2,7 @@
 name = "noise-vectors"
 version = "0.0.3"
 authors = ["sopium <sopium@mysterious.site>"]
+build = "build.rs"
 
 [dev-dependencies]
 rustc-serialize = "0.3"
