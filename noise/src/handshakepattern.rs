@@ -3,20 +3,16 @@ extern crate arrayvec;
 use self::arrayvec::ArrayVec;
 
 /// A token in noise message patterns.
+#[allow(missing_docs)]
 #[derive(Copy, Clone)]
 pub enum Token {
-    /// e.
     E,
-    /// s.
     S,
-    /// ee.
     EE,
-    /// es.
     ES,
-    /// se.
     SE,
-    /// ss.
     SS,
+    PSK,
 }
 
 use self::Token::*;

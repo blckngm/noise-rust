@@ -31,7 +31,9 @@ pub struct HandshakeState<D: DH, C: Cipher, H: Hash> {
 }
 
 impl<D, C, H> Clone for HandshakeState<D, C, H>
-    where D: DH, C: Cipher, H: Hash
+    where D: DH,
+          C: Cipher,
+          H: Hash
 {
     fn clone(&self) -> Self {
         Self {
@@ -53,14 +55,15 @@ impl<D, C, H> HandshakeState<D, C, H>
           H: Hash
 {
     /// Get protocol name, e.g. Noise_IK_25519_ChaChaPoly_BLAKE2s.
-    fn get_name(has_psk: bool, pattern_name: &str) -> ArrayString<[u8; 256]> {
+    fn get_name(pattern_name: &str) -> ArrayString<[u8; 256]> {
         let mut ret = ArrayString::new();
-        write!(&mut ret, "Noise{}_{}_{}_{}_{}",
-               if has_psk { "PSK" } else { "" },
+        write!(&mut ret,
+               "Noise_{}_{}_{}_{}",
                pattern_name,
                D::name(),
                C::name(),
-               H::name()).unwrap();
+               H::name())
+            .unwrap();
         ret
     }
 
@@ -71,30 +74,20 @@ impl<D, C, H> HandshakeState<D, C, H>
     /// An explicit `e` should only be specified for testing purposes, or in fallback patterns.
     /// If you do pass in an explicit `e`, `HandshakeState` will use it as is and will not
     /// generate new ephemeral keys in `write_message`.
-    pub fn new<P, PSK>(pattern: HandshakePattern,
-                       is_initiator: bool,
-                       prologue: P,
-                       psk: Option<PSK>,
-                       s: Option<D::Key>,
-                       e: Option<D::Key>,
-                       rs: Option<D::Pubkey>,
-                       re: Option<D::Pubkey>)
-                       -> Self
-        where P: AsRef<[u8]>,
-              PSK: AsRef<[u8]>
+    pub fn new<P>(pattern: HandshakePattern,
+                  is_initiator: bool,
+                  prologue: P,
+                  s: Option<D::Key>,
+                  e: Option<D::Key>,
+                  rs: Option<D::Pubkey>,
+                  re: Option<D::Pubkey>)
+                  -> Self
+        where P: AsRef<[u8]>
     {
-        let mut symmetric = SymmetricState::new(Self::get_name(psk.is_some(), pattern.get_name())
-            .as_bytes());
+        let mut symmetric = SymmetricState::new(Self::get_name(pattern.get_name()).as_bytes());
 
         // Mix in prologue.
         symmetric.mix_hash(prologue.as_ref());
-
-        // Mix in pre-shared key.
-        if let Some(psk) = psk {
-            let psk = psk.as_ref();
-            assert_eq!(psk.len(), 32);
-            symmetric.mix_preshared_key(psk);
-        }
 
         // Mix in static keys known ahead of time.
         for t in pattern.get_pre_i() {
@@ -122,15 +115,9 @@ impl<D, C, H> HandshakeState<D, C, H>
                     if is_initiator {
                         let re = re.as_ref().unwrap().as_slice();
                         symmetric.mix_hash(re);
-                        if symmetric.has_preshared_key() {
-                            symmetric.mix_key(re);
-                        }
                     } else {
                         let e = D::pubkey(e.as_ref().unwrap());
                         symmetric.mix_hash(e.as_slice());
-                        if symmetric.has_preshared_key() {
-                            symmetric.mix_key(e.as_slice());
-                        }
                     }
                 }
                 _ => panic!("Unexpected token in pre message"),
@@ -166,9 +153,6 @@ impl<D, C, H> HandshakeState<D, C, H>
             match t {
                 Token::E => {
                     overhead += D::Pubkey::len();
-                    if self.symmetric.has_preshared_key() {
-                        has_key = true;
-                    }
                 }
                 Token::S => {
                     overhead += D::Pubkey::len();
@@ -227,9 +211,6 @@ impl<D, C, H> HandshakeState<D, C, H>
                     }
                     let e_pk = D::pubkey(self.e.as_ref().unwrap());
                     self.symmetric.mix_hash(e_pk.as_slice());
-                    if self.symmetric.has_preshared_key() {
-                        self.symmetric.mix_key(e_pk.as_slice());
-                    }
                     out[cur..cur + D::Pubkey::len()].copy_from_slice(e_pk.as_slice());
                     cur += D::Pubkey::len();
                 }
@@ -294,9 +275,6 @@ impl<D, C, H> HandshakeState<D, C, H>
                 Token::E => {
                     let re = D::Pubkey::from_slice(get(D::Pubkey::len()));
                     self.symmetric.mix_hash(re.as_slice());
-                    if self.symmetric.has_preshared_key() {
-                        self.symmetric.mix_key(re.as_slice());
-                    }
                     self.re = Some(re);
                 }
                 Token::S => {
@@ -407,7 +385,6 @@ pub struct HandshakeStateBuilder<'a, D: DH> {
     pattern: Option<HandshakePattern>,
     is_initiator: Option<bool>,
     prologue: Option<&'a [u8]>,
-    psk: Option<&'a [u8]>,
     s: Option<D::Key>,
     e: Option<D::Key>,
     rs: Option<D::Pubkey>,
@@ -423,7 +400,6 @@ impl<'a, D> HandshakeStateBuilder<'a, D>
             pattern: None,
             is_initiator: None,
             prologue: None,
-            psk: None,
             s: None,
             e: None,
             rs: None,
@@ -446,12 +422,6 @@ impl<'a, D> HandshakeStateBuilder<'a, D>
     /// Set prologue.
     pub fn set_prologue(&mut self, prologue: &'a [u8]) -> &mut Self {
         self.prologue = Some(prologue);
-        self
-    }
-
-    /// Set pre-shared key.
-    pub fn set_psk(&mut self, psk: &'a [u8]) -> &mut Self {
-        self.psk = Some(psk);
         self
     }
 
@@ -495,7 +465,6 @@ impl<'a, D> HandshakeStateBuilder<'a, D>
         HandshakeState::new(self.pattern.unwrap(),
                             self.is_initiator.unwrap(),
                             self.prologue.unwrap(),
-                            self.psk,
                             self.s,
                             self.e,
                             self.rs,

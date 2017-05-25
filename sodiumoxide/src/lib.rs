@@ -45,7 +45,7 @@ impl U8Array for X25519Key {
     }
 
     fn as_slice(&self) -> &[u8] {
-        & (self.0).0
+        &(self.0).0
     }
 
     fn as_mut(&mut self) -> &mut [u8] {
@@ -182,9 +182,7 @@ impl Default for Blake2b {
     fn default() -> Self {
         unsafe {
             let mut b: Blake2b = uninitialized();
-            crypto_generichash_init(b.state.as_mut_ptr() as *mut _,
-                                    null(), 0,
-                                    64);
+            crypto_generichash_init(b.state.as_mut_ptr() as *mut _, null(), 0, 64);
             b
         }
     }
@@ -210,7 +208,8 @@ impl Hash for Blake2b {
         unsafe {
             let mut out: Self::Output = uninitialized();
             crypto_generichash_final(self.state.as_mut_ptr() as *mut _,
-                                     out.as_mut().as_mut_ptr(), 64);
+                                     out.as_mut().as_mut_ptr(),
+                                     64);
             out
         }
     }

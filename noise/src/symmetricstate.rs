@@ -6,18 +6,17 @@ pub struct SymmetricState<C: Cipher, H: Hash> {
     cipherstate: Option<CipherState<C>>,
     h: H::Output,
     ck: H::Output,
-    has_preshared_key: bool,
 }
 
 impl<C, H> Clone for SymmetricState<C, H>
-    where C: Cipher, H: Hash
+    where C: Cipher,
+          H: Hash
 {
     fn clone(&self) -> Self {
         Self {
             cipherstate: self.cipherstate.clone(),
             h: self.h.clone(),
             ck: self.ck.clone(),
-            has_preshared_key: self.has_preshared_key,
         }
     }
 }
@@ -40,7 +39,6 @@ impl<C, H> SymmetricState<C, H>
             cipherstate: None,
             ck: h.clone(),
             h: h,
-            has_preshared_key: false,
         }
     }
 
@@ -57,19 +55,15 @@ impl<C, H> SymmetricState<C, H>
         self.h = h.result();
     }
 
-    pub fn mix_preshared_key(&mut self, psk: &[u8]) {
-        let (k1, k2) = H::hkdf(self.ck.as_slice(), psk);
-        self.ck = k1;
-        self.mix_hash(k2.as_slice());
-        self.has_preshared_key = true;
+    pub fn mix_key_and_hash(&mut self, input_key_material: &[u8]) {
+        let (ck, temp_h, temp_k) = H::hkdf3(self.ck.as_slice(), input_key_material);
+        self.ck = ck;
+        self.mix_hash(temp_h.as_slice());
+        self.cipherstate = Some(CipherState::new(&temp_k.as_slice()[..C::key_len()], 0));
     }
 
     pub fn has_key(&self) -> bool {
         self.cipherstate.is_some()
-    }
-
-    pub fn has_preshared_key(&self) -> bool {
-        self.has_preshared_key
     }
 
     pub fn encrypt_and_hash(&mut self, plaintext: &[u8], out: &mut [u8]) {

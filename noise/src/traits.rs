@@ -204,4 +204,15 @@ pub trait Hash: Default {
         let out2 = Self::hmac_many(temp_key.as_slice(), &[out1.as_slice(), &[2u8]]);
         (out1, out2)
     }
+
+    /// Triple output HKDF.
+    fn hkdf3(chaining_key: &[u8],
+             input_key_material: &[u8])
+             -> (Self::Output, Self::Output, Self::Output) {
+        let temp_key = Self::hmac(chaining_key, input_key_material);
+        let out1 = Self::hmac(temp_key.as_slice(), &[1u8]);
+        let out2 = Self::hmac_many(temp_key.as_slice(), &[out1.as_slice(), &[2u8]]);
+        let out3 = Self::hmac_many(temp_key.as_slice(), &[out2.as_slice(), &[3u8]]);
+        (out1, out2, out3)
+    }
 }
