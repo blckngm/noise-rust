@@ -4,7 +4,6 @@ extern crate noise_protocol as noise;
 extern crate noise_sodiumoxide;
 extern crate noise_ring;
 extern crate noise_rust_crypto;
-extern crate serde;
 extern crate rustc_serialize;
 extern crate serde_json;
 #[macro_use]
@@ -94,6 +93,10 @@ fn verify_vector_with<D, C, H>(v: &Vector)
           C: Cipher,
           H: Hash
 {
+    if v.init_psk.is_some() {
+        return
+    }
+
     if v.fallback.unwrap_or(false) {
         verify_vector_fallback::<D, C, H>(v);
         return;
@@ -109,7 +112,6 @@ fn verify_vector_with<D, C, H>(v: &Vector)
     let mut h_i = HandshakeState::<D, C, H>::new(pattern.clone(),
                                                  true,
                                                  v.init_prologue.to_bytes(),
-                                                 v.init_psk.as_ref().map(HexString::to_bytes),
                                                  v.init_static.as_ref().map(to_dh::<D>),
                                                  Some(to_dh::<D>(&v.init_ephemeral)),
                                                  v.init_remote_static.as_ref().map(to_pubkey::<D>),
@@ -117,7 +119,6 @@ fn verify_vector_with<D, C, H>(v: &Vector)
     let mut h_r = HandshakeState::<D, C, H>::new(pattern,
                                                  false,
                                                  v.resp_prologue.to_bytes(),
-                                                 v.resp_psk.as_ref().map(HexString::to_bytes),
                                                  v.resp_static.as_ref().map(to_dh::<D>),
                                                  v.resp_ephemeral.as_ref().map(to_dh::<D>),
                                                  v.resp_remote_static.as_ref().map(to_pubkey::<D>),
@@ -195,19 +196,11 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     let re = to_dh::<D>(v.resp_ephemeral.as_ref().unwrap());
     let rs = to_dh::<D>(v.resp_static.as_ref().unwrap());
 
-    let ipsk = v.init_psk.as_ref().map(HexString::to_bytes);
-    let ipsk = ipsk.as_ref().map(|x| x.as_slice());
-    let rpsk = v.resp_psk.as_ref().map(HexString::to_bytes);
-    let rpsk = rpsk.as_ref().map(|x| x.as_slice());
-
     // Build init handshake state.
     let mut ibuilder = HandshakeStateBuilder::<D>::new();
     ibuilder.set_is_initiator(true);
     ibuilder.set_pattern(noise_ik());
     ibuilder.set_prologue(&iprologue);
-    if ipsk.is_some() {
-        ibuilder.set_psk(ipsk.unwrap());
-    }
     ibuilder.set_e(ie.clone());
     ibuilder.set_s(is.clone());
     ibuilder.set_rs(irs);
@@ -218,9 +211,6 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     rbuilder.set_is_initiator(false);
     rbuilder.set_pattern(noise_ik());
     rbuilder.set_prologue(&rprologue);
-    if rpsk.is_some() {
-        rbuilder.set_psk(rpsk.unwrap());
-    }
     rbuilder.set_s(rs.clone());
     rbuilder.set_e(re.clone());
     let mut rh0 = rbuilder.build_handshake_state::<C, H>();
@@ -236,9 +226,6 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     ibuilder.set_is_initiator(true);
     ibuilder.set_pattern(noise_xx_fallback());
     ibuilder.set_prologue(&rprologue);
-    if rpsk.is_some() {
-        ibuilder.set_psk(rpsk.unwrap());
-    }
     ibuilder.set_e(re);
     ibuilder.set_s(rs);
     ibuilder.set_re(rh0.get_re().unwrap());
@@ -249,9 +236,6 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     rbuilder.set_is_initiator(false);
     rbuilder.set_pattern(noise_xx_fallback());
     rbuilder.set_prologue(&iprologue);
-    if ipsk.is_some() {
-        rbuilder.set_psk(ipsk.unwrap());
-    }
     rbuilder.set_s(is);
     rbuilder.set_e(ie);
     let mut rh1 = rbuilder.build_handshake_state::<C, H>();
