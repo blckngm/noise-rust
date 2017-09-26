@@ -5,15 +5,11 @@
 [![Build Status](https://travis-ci.org/sopium/noise-rust.svg?branch=master)](https://travis-ci.org/sopium/noise-rust)
 
 Implementation of the [Noise Protocol
-Framework](http://noiseprotocol.org) in Rust. A continuation of
-trevp's [screech](https://github.com/trevp/screech).
+Framework](http://noiseprotocol.org) in Rust.
 
 ## Status
 
-Protocol revision: 31.
-
-All basic patterns and `XXfallback` are implemented. Vectors from
-`noise-c` and `cacophony` are successfully verified.
+Work in progress to catch up with v32 and v33.
 
 ## Crates
 
