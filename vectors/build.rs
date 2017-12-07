@@ -12,7 +12,7 @@ fn gen<O: Write>(mut out: O) -> ::std::io::Result<()> {
     dhs.insert("25519", vec!["sodium::X25519", "crypto::X25519"]);
 
     let mut ciphers = HashMap::new();
-    ciphers.insert("ChaChaPoly", vec!["ring::ChaCha20Poly1305", "crypto::ChaCha20Poly1305"]);
+    ciphers.insert("ChaChaPoly", vec!["ring::ChaCha20Poly1305", "sodium::ChaCha20Poly1305", "crypto::ChaCha20Poly1305"]);
     ciphers.insert("AESGCM", vec!["ring::Aes256Gcm", "crypto::Aes256Gcm"]);
 
     let mut hashes: HashMap<&str, Vec<&str>> = HashMap::new();

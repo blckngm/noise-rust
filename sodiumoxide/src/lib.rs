@@ -1,13 +1,9 @@
+extern crate byteorder;
 extern crate noise_protocol as noise;
 extern crate libsodium_sys;
 extern crate sodiumoxide;
 
-// TODO Add AEADs, after
-// [https://github.com/dnaq/sodiumoxide/pull/149] is merged.
-
-// TODO Use stream hasher, after this is fixed:
-// [https://github.com/dnaq/sodiumoxide/issues/119]
-
+use byteorder::{ByteOrder, LittleEndian};
 use libsodium_sys::*;
 use noise::*;
 use sodiumoxide::crypto::hash::{sha256, sha512};
@@ -15,8 +11,8 @@ use sodiumoxide::crypto::scalarmult::curve25519;
 use sodiumoxide::init as sodium_init;
 use sodiumoxide::randombytes::randombytes_into;
 use sodiumoxide::utils::memzero;
-use std::mem::uninitialized;
-use std::ptr::null;
+use std::mem::{uninitialized, swap};
+use std::ptr::{null, null_mut};
 
 /// Sodiumoxide init.
 ///
@@ -93,14 +89,16 @@ impl<A> U8Array for Sensitive<A>
 
 pub enum X25519 {}
 
+pub enum ChaCha20Poly1305 {}
+
 #[derive(Default)]
 pub struct Sha256 {
-    buf: Vec<u8>,
+    state: sha256::State,
 }
 
 #[derive(Default)]
 pub struct Sha512 {
-    buf: Vec<u8>,
+    state: sha512::State,
 }
 
 pub struct Blake2b {
@@ -144,6 +142,59 @@ impl DH for X25519 {
     }
 }
 
+impl Cipher for ChaCha20Poly1305 {
+    type Key = Sensitive<[u8; 32]>;
+
+    fn name() -> &'static str {
+        "ChaChaPoly"
+    }
+
+    fn encrypt(k: &Self::Key, nonce: u64, ad: &[u8], plaintext: &[u8], out: &mut [u8]) {
+        assert_eq!(out.len(), plaintext.len() + 16);
+
+        let mut n = [0u8; 12];
+        LittleEndian::write_u64(&mut n[4..], nonce);
+
+        unsafe {
+            crypto_aead_chacha20poly1305_ietf_encrypt(out.as_mut_ptr(),
+                                                      null_mut(),
+                                                      plaintext.as_ptr(),
+                                                      plaintext.len() as u64,
+                                                      ad.as_ptr(),
+                                                      ad.len() as u64,
+                                                      null(),
+                                                      &n,
+                                                      &k.0);
+        }
+    }
+
+    fn decrypt(k: &Self::Key,
+               nonce: u64,
+               ad: &[u8],
+               ciphertext: &[u8],
+               out: &mut [u8])
+               -> Result<(), ()> {
+        assert_eq!(out.len() + 16, ciphertext.len());
+
+        let mut n = [0u8; 12];
+        LittleEndian::write_u64(&mut n[4..], nonce);
+
+        let ret = unsafe {
+            crypto_aead_chacha20poly1305_ietf_decrypt(out.as_mut_ptr(),
+                                                      null_mut(),
+                                                      null_mut(),
+                                                      ciphertext.as_ptr(),
+                                                      ciphertext.len() as u64,
+                                                      ad.as_ptr(),
+                                                      ad.len() as u64,
+                                                      &n,
+                                                      &k.0)
+        };
+
+        if ret == 0 { Ok(()) } else { Err(()) }
+    }
+}
+
 impl Hash for Sha256 {
     type Block = [u8; 64];
     type Output = Sensitive<[u8; 32]>;
@@ -153,11 +204,13 @@ impl Hash for Sha256 {
     }
 
     fn input(&mut self, data: &[u8]) {
-        self.buf.extend_from_slice(data);
+        self.state.update(data);
     }
 
     fn result(&mut self) -> Self::Output {
-        Sensitive(sha256::hash(&self.buf).0)
+        let mut state = sha256::State::new();
+        swap(&mut state, &mut self.state);
+        Sensitive(state.finalize().0)
     }
 }
 
@@ -170,11 +223,13 @@ impl Hash for Sha512 {
     }
 
     fn input(&mut self, data: &[u8]) {
-        self.buf.extend_from_slice(data);
+        self.state.update(data);
     }
 
     fn result(&mut self) -> Self::Output {
-        Sensitive(sha512::hash(&self.buf).0)
+        let mut state = sha512::State::new();
+        swap(&mut state, &mut self.state);
+        Sensitive(state.finalize().0)
     }
 }
 

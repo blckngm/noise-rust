@@ -10,12 +10,6 @@ documentation = "https://docs.rs/noise-sodiumoxide/0.0.3"
 
 [dependencies]
 byteorder = "1.0.0"
-libsodium-sys = "0.0.14"
-
-[dependencies.noise-protocol]
-path = "../noise"
-version = "0.0.3"
-
-[dependencies.sodiumoxide]
-default-features = false
-version = "0.0.14"
+libsodium-sys = "0.0.16"
+noise-protocol = { version = "0.0.3", path = "../noise" }
+sodiumoxide = "0.0.16"
