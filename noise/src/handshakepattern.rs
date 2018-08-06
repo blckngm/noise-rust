@@ -27,6 +27,34 @@ pub struct HandshakePattern {
 }
 
 impl HandshakePattern {
+    /// Construct a new HandshakePattern from pre-message patterns, message patterns and name.
+    ///
+    /// # Pattern validity
+    ///
+    /// It is the caller's responlity to ensure that the pattern is *valid*.
+    ///
+    /// # Panics
+    ///
+    /// If any of the patterns are too long (longer than 8 tokens).
+    ///
+    /// Or if the number of patterns are too large (larger than 8).
+    pub fn new<'a>(
+        pre_i: &[Token],
+        pre_r: &[Token],
+        msg_patterns: &[&[Token]],
+        name: &'static str,
+    ) -> Self {
+        HandshakePattern {
+            pre_i: pre_i.into_iter().cloned().collect(),
+            pre_r: pre_r.into_iter().cloned().collect(),
+            msg_patterns: msg_patterns
+                .into_iter()
+                .map(|p| p.into_iter().cloned().collect())
+                .collect(),
+            name,
+        }
+    }
+
     /// Get initiator pre-messages.
     pub fn get_pre_i(&self) -> &[Token] {
         &self.pre_i
@@ -50,6 +78,16 @@ impl HandshakePattern {
     /// Get pattern name.
     pub fn get_name(&self) -> &str {
         self.name
+    }
+
+    /// Whether there are any psk tokens in this pattern.
+    pub fn has_psk(&self) -> bool {
+        self.msg_patterns.iter().any(|m| {
+            m.iter().any(|m| match m {
+                Token::PSK => true,
+                _ => false,
+            })
+        })
     }
 }
 
