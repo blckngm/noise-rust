@@ -34,39 +34,41 @@ fn gen<O: Write>(mut out: O) -> ::std::io::Result<()> {
     hashes.insert("BLAKE2s", vec!["crypto::Blake2s"]);
     hashes.insert("BLAKE2b", vec!["crypto::Blake2b", "sodium::Blake2b"]);
 
-    writeln!(out, "fn verify_vector(v: Vector) {{")?;
+    writeln!(out, "fn verify_vector(v: Vector) -> bool {{")?;
     writeln!(
         out,
-        "    match (v.dh.clone().as_ref(), v.cipher.clone().as_ref(), v.hash.clone().as_ref()) {{"
-    )?;
+        "    let (_, dh, cipher, hash) = v.parse_protocol_name();"
+    );
+    writeln!(out, "    match (dh, cipher, hash) {{")?;
 
     for d in dhs.keys() {
         for c in ciphers.keys() {
             for h in hashes.keys() {
                 writeln!(out, r#"        ("{}", "{}", "{}") => {{"#, d, c, h)?;
+                writeln!(out, r#"        ["#);
                 for hh in hashes.get(h).unwrap() {
                     for cc in ciphers.get(c).unwrap() {
                         for dd in dhs.get(d).unwrap() {
                             writeln!(
                                 out,
-                                "            verify_vector_with::<{}, {}, {}>(&v);",
+                                "            verify_vector_with::<{}, {}, {}>(&v),",
                                 dd, cc, hh
                             )?;
                         }
                     }
                 }
+                writeln!(out, r#"        ].iter().any(|x| *x)"#);
                 writeln!(out, "        }}")?;
             }
         }
     }
 
-    out.write_all(
-        r#"        ("448", _, _) => (),
-        (dh, cipher, hash) => println!("Unknown combination: {}_{}_{}", dh, cipher, hash),
-    }
-}
-"#.as_bytes(),
-    )?;
+    writeln!(
+        out,
+        r#"        _ => false,
+    }}
+}}"#
+    );
 
     Ok(())
 }
