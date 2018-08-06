@@ -1,10 +1,10 @@
 // Program to verify the vectors.
 
+extern crate hex;
 extern crate noise_protocol as noise;
 extern crate noise_ring;
 extern crate noise_rust_crypto;
 extern crate noise_sodiumoxide;
-extern crate rustc_serialize;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
@@ -15,7 +15,8 @@ use noise_ring as ring;
 use noise_rust_crypto as crypto;
 use noise_sodiumoxide as sodium;
 
-use rustc_serialize::hex::FromHex;
+use hex::decode;
+
 use serde_json as json;
 
 #[derive(Serialize, Deserialize)]
@@ -23,7 +24,7 @@ struct HexString(String);
 
 impl HexString {
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.from_hex().unwrap()
+        decode(&self.0).unwrap()
     }
 }
 

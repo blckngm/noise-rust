@@ -5,10 +5,10 @@ authors = ["sopium <sopium@mysterious.site>"]
 build = "build.rs"
 
 [dev-dependencies]
-rustc-serialize = "0.3"
-serde = "0.9"
-serde_derive = "0.9"
-serde_json = "0.9"
+hex = "0.3.2"
+serde = "1"
+serde_derive = "1"
+serde_json = "1"
 noise-protocol = { path = "../noise", features = ["use_std"] }
 noise-ring = { path = "../ring" }
 noise-rust-crypto = { path = "../rust-crypto" }
