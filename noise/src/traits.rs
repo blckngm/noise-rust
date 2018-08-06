@@ -2,7 +2,7 @@
 
 // Inspired by ArrayVec and SmallVec, but no unsafe.
 
-// Use this trait so that we don't have to use `Vec` for some semi-fixed length buffers and
+// Use this trait so that we don't have to use [`Vec`] for some semi-fixed length buffers and
 // input/output types.
 pub trait U8Array: Sized {
     /// Create a new array filled with all zeros.
@@ -21,7 +21,7 @@ pub trait U8Array: Sized {
     fn as_slice(&self) -> &[u8];
     /// As mutable slice.
     fn as_mut(&mut self) -> &mut [u8];
-    // Cannot just impl `Clone`, that will conflict with [u8; 32].
+    // Cannot just impl [`Clone`], that will conflict with [u8; 32].
     /// Clone.
     fn clone(&self) -> Self {
         Self::from_slice(self.as_slice())
@@ -102,12 +102,16 @@ pub trait Cipher {
 
     /// AEAD encryption.
     ///
-    /// out.len() == plaintext.len() + Self::tag_len()
+    /// # Panics
+    ///
+    /// If `out.len() != plaintext.len() + Self::tag_len()`
     fn encrypt(k: &Self::Key, nonce: u64, ad: &[u8], plaintext: &[u8], out: &mut [u8]);
 
     /// AEAD decryption.
     ///
-    /// out.len() == ciphertext.len() - Self::tag_len()
+    /// # Panics
+    ///
+    /// If `out.len() != ciphertext.len() - Self::tag_len()`
     fn decrypt(
         k: &Self::Key,
         nonce: u64,
@@ -116,7 +120,7 @@ pub trait Cipher {
         out: &mut [u8],
     ) -> Result<(), ()>;
 
-    /// Rekey. Returns a new cipher key as a pseudorandom function of k.
+    /// Rekey. Returns a new cipher key as a pseudorandom function of `k`.
     fn rekey(k: &Self::Key) -> Self::Key {
         // XXX: `k1` is not zeroed.
         let mut k1 = [0u8; 48];

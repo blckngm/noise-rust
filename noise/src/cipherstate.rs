@@ -41,7 +41,7 @@ where
         }
     }
 
-    /// Rekey. Set our key to REKEY(old key).
+    /// Rekey. Set our key to `REKEY(old key)`.
     pub fn rekey(&mut self) {
         self.key = C::rekey(&self.key);
     }

@@ -31,4 +31,4 @@ pub mod patterns {
     pub use handshakepattern::*;
 }
 
-pub use handshakestate::{HandshakeState, HandshakeStateBuilder};
+pub use handshakestate::{Error, ErrorKind, HandshakeState, HandshakeStateBuilder};
