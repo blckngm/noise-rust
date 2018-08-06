@@ -61,8 +61,7 @@ macro_rules! vec {
         {
             let mut temp_vec = ArrayVec::new();
             $(
-                let push_result = temp_vec.push($x);
-                assert!(push_result.is_none());
+                temp_vec.push($x);
             )*
             temp_vec
         }
