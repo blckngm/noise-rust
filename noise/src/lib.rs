@@ -17,14 +17,14 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "use_std"), no_std)]
 
-mod traits;
 mod cipherstate;
-mod symmetricstate;
-mod handshakestate;
 mod handshakepattern;
+mod handshakestate;
+mod symmetricstate;
+mod traits;
 
 pub use cipherstate::CipherState;
-pub use traits::{U8Array, DH, Cipher, Hash};
+pub use traits::{Cipher, Hash, U8Array, DH};
 
 /// Handshake patterns.
 pub mod patterns {

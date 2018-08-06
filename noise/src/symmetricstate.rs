@@ -9,8 +9,9 @@ pub struct SymmetricState<C: Cipher, H: Hash> {
 }
 
 impl<C, H> Clone for SymmetricState<C, H>
-    where C: Cipher,
-          H: Hash
+where
+    C: Cipher,
+    H: Hash,
 {
     fn clone(&self) -> Self {
         Self {
@@ -22,8 +23,9 @@ impl<C, H> Clone for SymmetricState<C, H>
 }
 
 impl<C, H> SymmetricState<C, H>
-    where C: Cipher,
-          H: Hash
+where
+    C: Cipher,
+    H: Hash,
 {
     /// Initialize a `SymmetricState` with a handshake name.
     pub fn new(handshake_name: &[u8]) -> SymmetricState<C, H> {

@@ -4,9 +4,9 @@ extern crate core;
 use self::arrayvec::ArrayString;
 use self::core::fmt::Write;
 use cipherstate::CipherState;
-use handshakepattern::{Token, HandshakePattern};
+use handshakepattern::{HandshakePattern, Token};
 use symmetricstate::SymmetricState;
-use traits::{DH, Cipher, Hash, U8Array};
+use traits::{Cipher, Hash, U8Array, DH};
 
 /// Noise handshake state.
 ///
@@ -31,9 +31,10 @@ pub struct HandshakeState<D: DH, C: Cipher, H: Hash> {
 }
 
 impl<D, C, H> Clone for HandshakeState<D, C, H>
-    where D: DH,
-          C: Cipher,
-          H: Hash
+where
+    D: DH,
+    C: Cipher,
+    H: Hash,
 {
     fn clone(&self) -> Self {
         Self {
@@ -50,20 +51,22 @@ impl<D, C, H> Clone for HandshakeState<D, C, H>
 }
 
 impl<D, C, H> HandshakeState<D, C, H>
-    where D: DH,
-          C: Cipher,
-          H: Hash
+where
+    D: DH,
+    C: Cipher,
+    H: Hash,
 {
     /// Get protocol name, e.g. Noise_IK_25519_ChaChaPoly_BLAKE2s.
     fn get_name(pattern_name: &str) -> ArrayString<[u8; 256]> {
         let mut ret = ArrayString::new();
-        write!(&mut ret,
-               "Noise_{}_{}_{}_{}",
-               pattern_name,
-               D::name(),
-               C::name(),
-               H::name())
-            .unwrap();
+        write!(
+            &mut ret,
+            "Noise_{}_{}_{}_{}",
+            pattern_name,
+            D::name(),
+            C::name(),
+            H::name()
+        ).unwrap();
         ret
     }
 
@@ -74,15 +77,17 @@ impl<D, C, H> HandshakeState<D, C, H>
     /// An explicit `e` should only be specified for testing purposes, or in fallback patterns.
     /// If you do pass in an explicit `e`, `HandshakeState` will use it as is and will not
     /// generate new ephemeral keys in `write_message`.
-    pub fn new<P>(pattern: HandshakePattern,
-                  is_initiator: bool,
-                  prologue: P,
-                  s: Option<D::Key>,
-                  e: Option<D::Key>,
-                  rs: Option<D::Pubkey>,
-                  re: Option<D::Pubkey>)
-                  -> Self
-        where P: AsRef<[u8]>
+    pub fn new<P>(
+        pattern: HandshakePattern,
+        is_initiator: bool,
+        prologue: P,
+        s: Option<D::Key>,
+        e: Option<D::Key>,
+        rs: Option<D::Pubkey>,
+        re: Option<D::Pubkey>,
+    ) -> Self
+    where
+        P: AsRef<[u8]>,
     {
         let mut symmetric = SymmetricState::new(Self::get_name(pattern.get_name()).as_bytes());
 
@@ -222,9 +227,10 @@ impl<D, C, H> HandshakeState<D, C, H>
                     };
 
                     let encrypted_s_out = &mut out[cur..cur + len];
-                    self.symmetric
-                        .encrypt_and_hash(D::pubkey(self.s.as_ref().unwrap()).as_slice(),
-                                          encrypted_s_out);
+                    self.symmetric.encrypt_and_hash(
+                        D::pubkey(self.s.as_ref().unwrap()).as_slice(),
+                        encrypted_s_out,
+                    );
                     cur += len;
                 }
                 t => {
@@ -392,7 +398,8 @@ pub struct HandshakeStateBuilder<'a, D: DH> {
 }
 
 impl<'a, D> HandshakeStateBuilder<'a, D>
-    where D: DH
+where
+    D: DH,
 {
     /// Create a new `HandshakeStateBuilder`.
     pub fn new() -> Self {
@@ -459,15 +466,18 @@ impl<'a, D> HandshakeStateBuilder<'a, D>
     ///
     /// `pattern`, `prologue` and `is_initiator` must be set.
     pub fn build_handshake_state<C, H>(self) -> HandshakeState<D, C, H>
-        where C: Cipher,
-              H: Hash
+    where
+        C: Cipher,
+        H: Hash,
     {
-        HandshakeState::new(self.pattern.unwrap(),
-                            self.is_initiator.unwrap(),
-                            self.prologue.unwrap(),
-                            self.s,
-                            self.e,
-                            self.rs,
-                            self.re)
+        HandshakeState::new(
+            self.pattern.unwrap(),
+            self.is_initiator.unwrap(),
+            self.prologue.unwrap(),
+            self.s,
+            self.e,
+            self.rs,
+            self.re,
+        )
     }
 }

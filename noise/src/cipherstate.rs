@@ -13,7 +13,8 @@ pub struct CipherState<C: Cipher> {
 }
 
 impl<C> Clone for CipherState<C>
-    where C: Cipher
+where
+    C: Cipher,
 {
     fn clone(&self) -> Self {
         Self {
@@ -24,7 +25,8 @@ impl<C> Clone for CipherState<C>
 }
 
 impl<C> CipherState<C>
-    where C: Cipher
+where
+    C: Cipher,
 {
     /// Name of cipher, e.g. “ChaChaPoly”.
     pub fn name() -> &'static str {
@@ -52,11 +54,12 @@ impl<C> CipherState<C>
     }
 
     /// AEAD decryption.
-    pub fn decrypt_ad(&mut self,
-                      authtext: &[u8],
-                      ciphertext: &[u8],
-                      out: &mut [u8])
-                      -> Result<(), ()> {
+    pub fn decrypt_ad(
+        &mut self,
+        authtext: &[u8],
+        ciphertext: &[u8],
+        out: &mut [u8],
+    ) -> Result<(), ()> {
         C::decrypt(&self.key, self.n, authtext, ciphertext, out)?;
         self.n = self.n.checked_add(1).unwrap();
         Ok(())

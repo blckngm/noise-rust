@@ -34,30 +34,25 @@ macro_rules! impl_array {
             fn new() -> Self {
                 [0u8; $len]
             }
-
             fn new_with(x: u8) -> Self {
                 [x; $len]
             }
-
             fn from_slice(data: &[u8]) -> Self {
                 let mut a = [0u8; $len];
                 a.copy_from_slice(data);
                 a
             }
-
             fn len() -> usize {
                 $len
             }
-
             fn as_slice(&self) -> &[u8] {
                 self
             }
-
             fn as_mut(&mut self) -> &mut [u8] {
                 self
             }
         }
-    }
+    };
 }
 
 impl_array!(32);
@@ -113,12 +108,13 @@ pub trait Cipher {
     /// AEAD decryption.
     ///
     /// out.len() == ciphertext.len() - Self::tag_len()
-    fn decrypt(k: &Self::Key,
-               nonce: u64,
-               ad: &[u8],
-               ciphertext: &[u8],
-               out: &mut [u8])
-               -> Result<(), ()>;
+    fn decrypt(
+        k: &Self::Key,
+        nonce: u64,
+        ad: &[u8],
+        ciphertext: &[u8],
+        out: &mut [u8],
+    ) -> Result<(), ()>;
 
     /// Rekey. Returns a new cipher key as a pseudorandom function of k.
     fn rekey(k: &Self::Key) -> Self::Key {
@@ -206,9 +202,10 @@ pub trait Hash: Default {
     }
 
     /// Triple output HKDF.
-    fn hkdf3(chaining_key: &[u8],
-             input_key_material: &[u8])
-             -> (Self::Output, Self::Output, Self::Output) {
+    fn hkdf3(
+        chaining_key: &[u8],
+        input_key_material: &[u8],
+    ) -> (Self::Output, Self::Output, Self::Output) {
         let temp_key = Self::hmac(chaining_key, input_key_material);
         let out1 = Self::hmac(temp_key.as_slice(), &[1u8]);
         let out2 = Self::hmac_many(temp_key.as_slice(), &[out1.as_slice(), &[2u8]]);

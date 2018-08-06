@@ -1,11 +1,10 @@
 extern crate byteorder;
 extern crate crypto;
-extern crate rand;
 extern crate noise_protocol as noise;
+extern crate rand;
 
-use byteorder::{BigEndian, LittleEndian, ByteOrder};
-use crypto::{blake2b, blake2s, sha2};
-use crypto::aead::{AeadEncryptor, AeadDecryptor};
+use byteorder::{BigEndian, ByteOrder, LittleEndian};
+use crypto::aead::{AeadDecryptor, AeadEncryptor};
 use crypto::aes::KeySize;
 use crypto::aes_gcm::AesGcm;
 use crypto::chacha20::ChaCha20;
@@ -15,6 +14,7 @@ use crypto::mac::Mac;
 use crypto::poly1305::Poly1305;
 use crypto::symmetriccipher::SynchronousStreamCipher;
 use crypto::util::{fixed_time_eq, secure_memset};
+use crypto::{blake2b, blake2s, sha2};
 use noise::*;
 use rand::{OsRng, Rng};
 
@@ -123,21 +123,24 @@ impl Cipher for Aes256Gcm {
         cipher.encrypt(plaintext, c, t);
     }
 
-    fn decrypt(k: &Self::Key,
-               nonce: u64,
-               ad: &[u8],
-               ciphertext: &[u8],
-               out: &mut [u8])
-               -> Result<(), ()> {
+    fn decrypt(
+        k: &Self::Key,
+        nonce: u64,
+        ad: &[u8],
+        ciphertext: &[u8],
+        out: &mut [u8],
+    ) -> Result<(), ()> {
         assert_eq!(ciphertext.len(), out.len() + 16);
 
         let mut nonce_bytes = [0u8; 12];
         BigEndian::write_u64(&mut nonce_bytes[4..], nonce);
         let mut cipher = AesGcm::new(KeySize::KeySize256, k.as_slice(), &nonce_bytes, ad);
         let text_len = ciphertext.len() - 16;
-        if cipher.decrypt(&ciphertext[..text_len],
-                          &mut out[..text_len],
-                          &ciphertext[text_len..]) {
+        if cipher.decrypt(
+            &ciphertext[..text_len],
+            &mut out[..text_len],
+            &ciphertext[text_len..],
+        ) {
             Ok(())
         } else {
             Err(())
@@ -182,12 +185,13 @@ impl Cipher for ChaCha20Poly1305 {
         poly.raw_result(&mut out[plaintext.len()..]);
     }
 
-    fn decrypt(k: &Self::Key,
-               nonce: u64,
-               ad: &[u8],
-               ciphertext: &[u8],
-               out: &mut [u8])
-               -> Result<(), ()> {
+    fn decrypt(
+        k: &Self::Key,
+        nonce: u64,
+        ad: &[u8],
+        ciphertext: &[u8],
+        out: &mut [u8],
+    ) -> Result<(), ()> {
         assert_eq!(ciphertext.len(), out.len() + 16);
 
         let mut nonce_bytes = [0u8; 12];
@@ -221,7 +225,9 @@ impl Cipher for ChaCha20Poly1305 {
 
 impl Default for Sha256 {
     fn default() -> Sha256 {
-        Sha256 { hasher: sha2::Sha256::new() }
+        Sha256 {
+            hasher: sha2::Sha256::new(),
+        }
     }
 }
 
@@ -246,7 +252,9 @@ impl Hash for Sha256 {
 
 impl Default for Sha512 {
     fn default() -> Sha512 {
-        Sha512 { hasher: sha2::Sha512::new() }
+        Sha512 {
+            hasher: sha2::Sha512::new(),
+        }
     }
 }
 
@@ -271,7 +279,9 @@ impl Hash for Sha512 {
 
 impl Default for Blake2b {
     fn default() -> Blake2b {
-        Blake2b { hasher: blake2b::Blake2b::new(64) }
+        Blake2b {
+            hasher: blake2b::Blake2b::new(64),
+        }
     }
 }
 
@@ -296,7 +306,9 @@ impl Hash for Blake2b {
 
 impl Default for Blake2s {
     fn default() -> Blake2s {
-        Blake2s { hasher: blake2s::Blake2s::new(32) }
+        Blake2s {
+            hasher: blake2s::Blake2s::new(32),
+        }
     }
 }
 
@@ -337,11 +349,14 @@ mod tests {
         ChaCha20Poly1305::encrypt(&key, nonce, &authtext, &plaintext, &mut ciphertext);
 
         let mut resulttext = [0u8; 0];
-        assert!(ChaCha20Poly1305::decrypt(&key, nonce, &authtext, &ciphertext, &mut resulttext)
-            .is_ok());
+        assert!(
+            ChaCha20Poly1305::decrypt(&key, nonce, &authtext, &ciphertext, &mut resulttext).is_ok()
+        );
         ciphertext[0] ^= 1;
-        assert!(ChaCha20Poly1305::decrypt(&key, nonce, &authtext, &ciphertext, &mut resulttext)
-            .is_err());
+        assert!(
+            ChaCha20Poly1305::decrypt(&key, nonce, &authtext, &ciphertext, &mut resulttext)
+                .is_err()
+        );
 
         // Non-empty plaintext.
 
@@ -351,8 +366,9 @@ mod tests {
         ChaCha20Poly1305::encrypt(&key, nonce, &authtext, &plaintext, &mut ciphertext);
 
         let mut resulttext = [0u8; 117];
-        assert!(ChaCha20Poly1305::decrypt(&key, nonce, &authtext, &ciphertext, &mut resulttext)
-            .is_ok());
+        assert!(
+            ChaCha20Poly1305::decrypt(&key, nonce, &authtext, &ciphertext, &mut resulttext).is_ok()
+        );
         assert_eq!(resulttext.to_hex(), plaintext.to_hex());
     }
 
@@ -390,12 +406,15 @@ mod tests {
         combined_text[..ciphertext.len()].copy_from_slice(&ciphertext);
         combined_text[ciphertext.len()..ciphertext.len() + 16].copy_from_slice(&tag);
 
-        assert!(ChaCha20Poly1305::decrypt(&key,
-                                          nonce,
-                                          &authtext,
-                                          &combined_text[..ciphertext.len() + 16],
-                                          &mut out[..ciphertext.len()])
-            .is_ok());
+        assert!(
+            ChaCha20Poly1305::decrypt(
+                &key,
+                nonce,
+                &authtext,
+                &combined_text[..ciphertext.len() + 16],
+                &mut out[..ciphertext.len()]
+            ).is_ok()
+        );
         let desired_plaintext = "496e7465726e65742d44726166747320\
                                  61726520647261667420646f63756d65\
                                  6e74732076616c696420666f72206120\

@@ -1,16 +1,16 @@
 // Program to verify the vectors.
 
 extern crate noise_protocol as noise;
-extern crate noise_sodiumoxide;
 extern crate noise_ring;
 extern crate noise_rust_crypto;
+extern crate noise_sodiumoxide;
 extern crate rustc_serialize;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
-use noise::*;
 use noise::patterns::*;
+use noise::*;
 use noise_ring as ring;
 use noise_rust_crypto as crypto;
 use noise_sodiumoxide as sodium;
@@ -77,24 +77,27 @@ fn get_pattern_by_name(name: &str) -> Option<HandshakePattern> {
 }
 
 fn to_dh<D>(k: &HexString) -> D::Key
-    where D: DH
+where
+    D: DH,
 {
     D::Key::from_slice(k.to_bytes().as_slice())
 }
 
 fn to_pubkey<D>(k: &HexString) -> D::Pubkey
-    where D: DH
+where
+    D: DH,
 {
     D::Pubkey::from_slice(k.to_bytes().as_slice())
 }
 
 fn verify_vector_with<D, C, H>(v: &Vector)
-    where D: DH,
-          C: Cipher,
-          H: Hash
+where
+    D: DH,
+    C: Cipher,
+    H: Hash,
 {
     if v.init_psk.is_some() {
-        return
+        return;
     }
 
     if v.fallback.unwrap_or(false) {
@@ -109,20 +112,24 @@ fn verify_vector_with<D, C, H>(v: &Vector)
     }
     let pattern = pattern.unwrap();
 
-    let mut h_i = HandshakeState::<D, C, H>::new(pattern.clone(),
-                                                 true,
-                                                 v.init_prologue.to_bytes(),
-                                                 v.init_static.as_ref().map(to_dh::<D>),
-                                                 Some(to_dh::<D>(&v.init_ephemeral)),
-                                                 v.init_remote_static.as_ref().map(to_pubkey::<D>),
-                                                 None);
-    let mut h_r = HandshakeState::<D, C, H>::new(pattern,
-                                                 false,
-                                                 v.resp_prologue.to_bytes(),
-                                                 v.resp_static.as_ref().map(to_dh::<D>),
-                                                 v.resp_ephemeral.as_ref().map(to_dh::<D>),
-                                                 v.resp_remote_static.as_ref().map(to_pubkey::<D>),
-                                                 None);
+    let mut h_i = HandshakeState::<D, C, H>::new(
+        pattern.clone(),
+        true,
+        v.init_prologue.to_bytes(),
+        v.init_static.as_ref().map(to_dh::<D>),
+        Some(to_dh::<D>(&v.init_ephemeral)),
+        v.init_remote_static.as_ref().map(to_pubkey::<D>),
+        None,
+    );
+    let mut h_r = HandshakeState::<D, C, H>::new(
+        pattern,
+        false,
+        v.resp_prologue.to_bytes(),
+        v.resp_static.as_ref().map(to_dh::<D>),
+        v.resp_ephemeral.as_ref().map(to_dh::<D>),
+        v.resp_remote_static.as_ref().map(to_pubkey::<D>),
+        None,
+    );
 
     let mut init_send = true;
     let mut handshake_completed = false;
@@ -155,8 +162,10 @@ fn verify_vector_with<D, C, H>(v: &Vector)
                 init_ciphers = Some(h_i.get_ciphers());
                 resp_ciphers = Some(h_r.get_ciphers());
                 if v.handshake_hash.is_some() {
-                    assert_eq!(v.handshake_hash.as_ref().unwrap().to_bytes(),
-                               h_i.get_hash());
+                    assert_eq!(
+                        v.handshake_hash.as_ref().unwrap().to_bytes(),
+                        h_i.get_hash()
+                    );
                 }
                 handshake_completed = true;
             }
@@ -181,9 +190,10 @@ fn verify_vector_with<D, C, H>(v: &Vector)
 }
 
 fn verify_vector_fallback<D, C, H>(v: &Vector)
-    where D: DH,
-          C: Cipher,
-          H: Hash
+where
+    D: DH,
+    C: Cipher,
+    H: Hash,
 {
     assert_eq!(v.pattern, "IK");
 
@@ -216,7 +226,9 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     let mut rh0 = rbuilder.build_handshake_state::<C, H>();
 
     // Abbreviated handshake (IK), should fail.
-    let m0 = ih0.write_message_vec(v.messages[0].payload.to_bytes().as_slice()).unwrap();
+    let m0 = ih0
+        .write_message_vec(v.messages[0].payload.to_bytes().as_slice())
+        .unwrap();
     assert_eq!(m0, v.messages[0].ciphertext.to_bytes().as_slice());
 
     assert!(rh0.read_message_vec(&m0).is_err());
@@ -241,11 +253,15 @@ fn verify_vector_fallback<D, C, H>(v: &Vector)
     let mut rh1 = rbuilder.build_handshake_state::<C, H>();
 
     // Fallback handshake.
-    let m1 = ih1.write_message_vec(v.messages[1].payload.to_bytes().as_slice()).unwrap();
+    let m1 = ih1
+        .write_message_vec(v.messages[1].payload.to_bytes().as_slice())
+        .unwrap();
     assert_eq!(m1, v.messages[1].ciphertext.to_bytes());
     rh1.read_message_vec(&m1).unwrap();
 
-    let m2 = rh1.write_message_vec(v.messages[2].payload.to_bytes().as_slice()).unwrap();
+    let m2 = rh1
+        .write_message_vec(v.messages[2].payload.to_bytes().as_slice())
+        .unwrap();
     assert_eq!(m2, v.messages[2].ciphertext.to_bytes());
     ih1.read_message_vec(&m2).unwrap();
 

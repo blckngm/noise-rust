@@ -1,6 +1,6 @@
 extern crate byteorder;
-extern crate noise_protocol as noise;
 extern crate libsodium_sys;
+extern crate noise_protocol as noise;
 extern crate sodiumoxide;
 
 use byteorder::{ByteOrder, LittleEndian};
@@ -11,7 +11,7 @@ use sodiumoxide::crypto::scalarmult::curve25519;
 use sodiumoxide::init as sodium_init;
 use sodiumoxide::randombytes::randombytes_into;
 use sodiumoxide::utils::memzero;
-use std::mem::{uninitialized, swap};
+use std::mem::{swap, uninitialized};
 use std::ptr::{null, null_mut};
 
 /// Sodiumoxide init.
@@ -52,7 +52,8 @@ impl U8Array for X25519Key {
 pub struct Sensitive<A: U8Array>(A);
 
 impl<A> Drop for Sensitive<A>
-    where A: U8Array
+where
+    A: U8Array,
 {
     fn drop(&mut self) {
         memzero(self.0.as_mut())
@@ -60,7 +61,8 @@ impl<A> Drop for Sensitive<A>
 }
 
 impl<A> U8Array for Sensitive<A>
-    where A: U8Array
+where
+    A: U8Array,
 {
     fn new() -> Self {
         Sensitive(A::new())
@@ -156,42 +158,51 @@ impl Cipher for ChaCha20Poly1305 {
         LittleEndian::write_u64(&mut n[4..], nonce);
 
         unsafe {
-            crypto_aead_chacha20poly1305_ietf_encrypt(out.as_mut_ptr(),
-                                                      null_mut(),
-                                                      plaintext.as_ptr(),
-                                                      plaintext.len() as u64,
-                                                      ad.as_ptr(),
-                                                      ad.len() as u64,
-                                                      null(),
-                                                      &n,
-                                                      &k.0);
+            crypto_aead_chacha20poly1305_ietf_encrypt(
+                out.as_mut_ptr(),
+                null_mut(),
+                plaintext.as_ptr(),
+                plaintext.len() as u64,
+                ad.as_ptr(),
+                ad.len() as u64,
+                null(),
+                &n,
+                &k.0,
+            );
         }
     }
 
-    fn decrypt(k: &Self::Key,
-               nonce: u64,
-               ad: &[u8],
-               ciphertext: &[u8],
-               out: &mut [u8])
-               -> Result<(), ()> {
+    fn decrypt(
+        k: &Self::Key,
+        nonce: u64,
+        ad: &[u8],
+        ciphertext: &[u8],
+        out: &mut [u8],
+    ) -> Result<(), ()> {
         assert_eq!(out.len() + 16, ciphertext.len());
 
         let mut n = [0u8; 12];
         LittleEndian::write_u64(&mut n[4..], nonce);
 
         let ret = unsafe {
-            crypto_aead_chacha20poly1305_ietf_decrypt(out.as_mut_ptr(),
-                                                      null_mut(),
-                                                      null_mut(),
-                                                      ciphertext.as_ptr(),
-                                                      ciphertext.len() as u64,
-                                                      ad.as_ptr(),
-                                                      ad.len() as u64,
-                                                      &n,
-                                                      &k.0)
+            crypto_aead_chacha20poly1305_ietf_decrypt(
+                out.as_mut_ptr(),
+                null_mut(),
+                null_mut(),
+                ciphertext.as_ptr(),
+                ciphertext.len() as u64,
+                ad.as_ptr(),
+                ad.len() as u64,
+                &n,
+                &k.0,
+            )
         };
 
-        if ret == 0 { Ok(()) } else { Err(()) }
+        if ret == 0 {
+            Ok(())
+        } else {
+            Err(())
+        }
     }
 }
 
@@ -253,18 +264,22 @@ impl Hash for Blake2b {
 
     fn input(&mut self, data: &[u8]) {
         unsafe {
-            crypto_generichash_update(self.state.as_mut_ptr() as *mut _,
-                                      data.as_ptr(),
-                                      data.len() as u64);
+            crypto_generichash_update(
+                self.state.as_mut_ptr() as *mut _,
+                data.as_ptr(),
+                data.len() as u64,
+            );
         }
     }
 
     fn result(&mut self) -> Self::Output {
         unsafe {
             let mut out: Self::Output = uninitialized();
-            crypto_generichash_final(self.state.as_mut_ptr() as *mut _,
-                                     out.as_mut().as_mut_ptr(),
-                                     64);
+            crypto_generichash_final(
+                self.state.as_mut_ptr() as *mut _,
+                out.as_mut().as_mut_ptr(),
+                64,
+            );
             out
         }
     }

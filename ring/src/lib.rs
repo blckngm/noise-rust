@@ -4,7 +4,7 @@ extern crate byteorder;
 extern crate noise_protocol as noise;
 extern crate ring;
 
-use self::byteorder::{ByteOrder, BigEndian, LittleEndian};
+use self::byteorder::{BigEndian, ByteOrder, LittleEndian};
 use noise::{Cipher, Hash, U8Array};
 use ring::aead;
 use ring::digest;
@@ -40,12 +40,13 @@ impl Cipher for Aes256Gcm {
         aead::seal_in_place(&key, &nonce_bytes, authtext, out, 16).unwrap();
     }
 
-    fn decrypt(k: &Self::Key,
-               nonce: u64,
-               authtext: &[u8],
-               ciphertext: &[u8],
-               out: &mut [u8])
-               -> Result<(), ()> {
+    fn decrypt(
+        k: &Self::Key,
+        nonce: u64,
+        authtext: &[u8],
+        ciphertext: &[u8],
+        out: &mut [u8],
+    ) -> Result<(), ()> {
         assert_eq!(ciphertext.len() - 16, out.len());
 
         let mut nonce_bytes = [0u8; 12];
@@ -55,7 +56,8 @@ impl Cipher for Aes256Gcm {
         let mut in_out = ciphertext.to_vec();
 
         let k = aead::OpeningKey::new(&aead::AES_256_GCM, k.as_slice()).unwrap();
-        let out0 = aead::open_in_place(&k, &nonce_bytes, authtext, 0, &mut in_out).map_err(|_| ())?;
+        let out0 =
+            aead::open_in_place(&k, &nonce_bytes, authtext, 0, &mut in_out).map_err(|_| ())?;
         assert_eq!(out0.len(), out.len());
 
         out.copy_from_slice(out0);
@@ -82,12 +84,13 @@ impl Cipher for ChaCha20Poly1305 {
         aead::seal_in_place(&k, &nonce_bytes, authtext, out, 16).unwrap();
     }
 
-    fn decrypt(k: &Self::Key,
-               nonce: u64,
-               authtext: &[u8],
-               ciphertext: &[u8],
-               out: &mut [u8])
-               -> Result<(), ()> {
+    fn decrypt(
+        k: &Self::Key,
+        nonce: u64,
+        authtext: &[u8],
+        ciphertext: &[u8],
+        out: &mut [u8],
+    ) -> Result<(), ()> {
         assert_eq!(ciphertext.len() - 16, out.len());
 
         let mut nonce_bytes = [0u8; 12];
@@ -96,7 +99,8 @@ impl Cipher for ChaCha20Poly1305 {
         let mut in_out = ciphertext.to_vec();
 
         let k = aead::OpeningKey::new(&aead::CHACHA20_POLY1305, k.as_slice()).unwrap();
-        let out0 = aead::open_in_place(&k, &nonce_bytes, authtext, 0, &mut in_out).map_err(|_| ())?;
+        let out0 =
+            aead::open_in_place(&k, &nonce_bytes, authtext, 0, &mut in_out).map_err(|_| ())?;
 
         out.copy_from_slice(out0);
         Ok(())
@@ -105,7 +109,9 @@ impl Cipher for ChaCha20Poly1305 {
 
 impl Default for Sha256 {
     fn default() -> Sha256 {
-        Sha256 { context: digest::Context::new(&digest::SHA256) }
+        Sha256 {
+            context: digest::Context::new(&digest::SHA256),
+        }
     }
 }
 
@@ -131,7 +137,9 @@ impl Hash for Sha256 {
 
 impl Default for Sha512 {
     fn default() -> Sha512 {
-        Sha512 { context: digest::Context::new(&digest::SHA512) }
+        Sha512 {
+            context: digest::Context::new(&digest::SHA512),
+        }
     }
 }
 
