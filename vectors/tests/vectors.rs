@@ -430,6 +430,8 @@ where
 include!(concat!(env!("OUT_DIR"), "/crypto_impls.rs"));
 
 fn verify_vectors(json_vectors: &str) {
+    sodium::init().unwrap();
+
     let v: json::Value = json::from_str(json_vectors).unwrap();
     let vectors: Vec<Vector> =
         json::from_value(v.as_object().unwrap().get("vectors").unwrap().clone()).unwrap();

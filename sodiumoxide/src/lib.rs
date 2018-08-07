@@ -17,8 +17,8 @@ use std::ptr::{null, null_mut};
 /// Sodiumoxide init.
 ///
 /// This will make some operations potentially faster, and make `genkey` thread safe.
-pub fn init() {
-    sodium_init();
+pub fn init() -> Result<(), ()> {
+    sodium_init()
 }
 
 pub struct X25519Key(curve25519::Scalar);
@@ -166,8 +166,8 @@ impl Cipher for ChaCha20Poly1305 {
                 ad.as_ptr(),
                 ad.len() as u64,
                 null(),
-                &n,
-                &k.0,
+                n.as_ptr(),
+                k.0.as_ptr(),
             );
         }
     }
@@ -193,8 +193,8 @@ impl Cipher for ChaCha20Poly1305 {
                 ciphertext.len() as u64,
                 ad.as_ptr(),
                 ad.len() as u64,
-                &n,
-                &k.0,
+                n.as_ptr(),
+                k.0.as_ptr(),
             )
         };
 
