@@ -1,15 +1,15 @@
 [package]
-authors = ["sopium <sopium@mysterious.site>"]
+authors = ["Guanhao Yin <sopium@mysterious.site>"]
 license = "Unlicense"
 name = "noise-sodiumoxide"
 readme = "README.md"
 repository = "https://github.com/sopium/noise-rust"
-version = "0.0.3"
+version = "0.0.5"
 description = "Sodiumoxide wrappers for noise-protocol."
-documentation = "https://docs.rs/noise-sodiumoxide/0.0.3"
+documentation = "https://docs.rs/noise-sodiumoxide/0.0.5"
 
 [dependencies]
 byteorder = "1.0.0"
 libsodium-sys = "0.0.16"
-noise-protocol = { version = "0.0.3", path = "../noise" }
+noise-protocol = { path = "../noise", version = "0.0.5" }
 sodiumoxide = "0.0.16"

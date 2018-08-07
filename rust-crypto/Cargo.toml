@@ -1,12 +1,12 @@
 [package]
-authors = ["sopium <sopium@mysterious.site>"]
+authors = ["Guanhao Yin <sopium@mysterious.site>"]
 license = "Unlicense"
 name = "noise-rust-crypto"
 readme = "README.md"
 repository = "https://github.com/sopium/noise-rust"
-version = "0.0.3"
+version = "0.0.5"
 description = "Rust-crypto wrappers for noise-protocol."
-documentation = "https://docs.rs/noise-rust-crypto/0.0.3"
+documentation = "https://docs.rs/noise-rust-crypto/0.0.5"
 
 [dependencies]
 byteorder = "1.0.0"
@@ -15,7 +15,7 @@ rand = "0.3"
 
 [dependencies.noise-protocol]
 path = "../noise"
-version = "0.0.3"
+version = "0.0.5"
 
 [dev-dependencies]
 rustc-serialize = "0.3"
