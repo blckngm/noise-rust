@@ -40,7 +40,7 @@ impl HandshakePattern {
     /// If any of the patterns are too long (longer than 8 tokens).
     ///
     /// Or if the number of patterns are too large (larger than 8).
-    pub fn new<'a>(
+    pub fn new(
         pre_i: &[Token],
         pre_r: &[Token],
         msg_patterns: &[&[Token]],

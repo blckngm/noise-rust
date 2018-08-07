@@ -536,6 +536,12 @@ pub struct HandshakeStateBuilder<'a, D: DH> {
     re: Option<D::Pubkey>,
 }
 
+impl<'a, D: DH> Default for HandshakeStateBuilder<'a, D> {
+    fn default() -> Self {
+        HandshakeStateBuilder::new()
+    }
+}
+
 impl<'a, D> HandshakeStateBuilder<'a, D>
 where
     D: DH,
