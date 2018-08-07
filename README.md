@@ -9,7 +9,24 @@ Framework](http://noiseprotocol.org) in Rust.
 
 ## Status
 
-Work in progress to catch up with v32 and v33.
+Revision 34 is implemented.
+
+Test vectors from [cacophony](https://github.com/centromere/cacophony) and [snow](https://github.com/mcginty/snow) are successfully verified.
+
+## Philosophy
+
+* Simple: straightforward implementation, small amount of code, almost no
+  dependencies, supports `no_std`.
+* Fast: static dispatch, no heap allocation necessary.
+* Unopinionated: flexible, primitive API, does not dictate how it should be
+  used.
+
+## Documentation
+
+* [noise-protocol](https://docs.rs/noise-protocol)
+* [noise-ring](https://docs.rs/noise-ring)
+* [noise-sodiumoxide](https://docs.rs/noise-sodiumoxide)
+* [noise-rust-crypto](https://docs.rs/noise-rust-crypto)
 
 ## Crates
 
@@ -38,3 +55,8 @@ The `noise-protocol` crate supports `no_std`, if default features are
 disabled.
 
 The `noise-ring` crate supports `no_std`.
+
+
+## License
+
+Unlicense.

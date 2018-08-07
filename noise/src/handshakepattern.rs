@@ -1,3 +1,5 @@
+//! Handshake patterns.
+
 extern crate arrayvec;
 
 use self::arrayvec::ArrayVec;
