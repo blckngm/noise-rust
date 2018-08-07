@@ -1,7 +1,7 @@
 extern crate arrayvec;
 extern crate core;
 
-use self::arrayvec::ArrayString;
+use self::arrayvec::{ArrayString, ArrayVec};
 use self::core::fmt::{Display, Error as FmtError, Formatter, Write};
 use cipherstate::CipherState;
 use handshakepattern::{HandshakePattern, Token};
@@ -19,7 +19,7 @@ pub struct HandshakeState<D: DH, C: Cipher, H: Hash> {
     pattern: HandshakePattern,
     message_index: usize,
     pattern_has_psk: bool,
-    next_psk: Option<[u8; 32]>,
+    psks: ArrayVec<[[u8; 32]; 4]>,
 }
 
 impl<D, C, H> Clone for HandshakeState<D, C, H>
@@ -39,7 +39,7 @@ where
             pattern: self.pattern.clone(),
             message_index: self.message_index,
             pattern_has_psk: self.pattern_has_psk,
-            next_psk: self.next_psk,
+            psks: self.psks.clone(),
         }
     }
 }
@@ -144,7 +144,7 @@ where
             pattern: pattern,
             message_index: 0,
             pattern_has_psk,
-            next_psk: None,
+            psks: ArrayVec::new(),
         }
     }
 
@@ -165,6 +165,9 @@ where
             match t {
                 Token::E => {
                     overhead += D::Pubkey::len();
+                    if self.pattern_has_psk {
+                        has_key = true;
+                    }
                 }
                 Token::S => {
                     overhead += D::Pubkey::len();
@@ -230,6 +233,9 @@ where
                     }
                     let e_pk = D::pubkey(self.e.as_ref().unwrap());
                     self.symmetric.mix_hash(e_pk.as_slice());
+                    if self.pattern_has_psk {
+                        self.symmetric.mix_key(e_pk.as_slice());
+                    }
                     out[cur..cur + D::Pubkey::len()].copy_from_slice(e_pk.as_slice());
                     cur += D::Pubkey::len();
                 }
@@ -248,7 +254,7 @@ where
                     cur += len;
                 }
                 Token::PSK => {
-                    if let Some(psk) = self.next_psk.take() {
+                    if let Some(psk) = self.psks.pop_at(0) {
                         self.symmetric.mix_key_and_hash(&psk);
                     } else {
                         return Err(Error::need_psk());
@@ -319,6 +325,9 @@ where
                 Token::E => {
                     let re = D::Pubkey::from_slice(get(D::Pubkey::len()));
                     self.symmetric.mix_hash(re.as_slice());
+                    if self.pattern_has_psk {
+                        self.symmetric.mix_key(re.as_slice());
+                    }
                     self.re = Some(re);
                 }
                 Token::S => {
@@ -334,7 +343,7 @@ where
                     self.rs = Some(rs);
                 }
                 Token::PSK => {
-                    if let Some(psk) = self.next_psk.take() {
+                    if let Some(psk) = self.psks.pop_at(0) {
                         self.symmetric.mix_key_and_hash(&psk);
                     } else {
                         return Err(Error::need_psk());
@@ -370,14 +379,13 @@ where
         }
     }
 
-    /// Set next PSK.
+    /// Push a PSK to the PSK-queue.
     ///
     /// # Panics
     ///
-    /// If `psk.len() != 32`.
-    pub fn set_next_psk(&mut self, psk: &[u8]) {
-        assert_eq!(psk.len(), 32);
-        self.next_psk = Some(U8Array::from_slice(psk));
+    /// If the PSK-queue becomes longer than 4.
+    pub fn push_psk(&mut self, psk: &[u8]) {
+        self.psks.push(U8Array::from_slice(psk));
     }
 
     /// Whether handshake has completed.

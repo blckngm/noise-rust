@@ -29,8 +29,10 @@ use regex::Regex;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json as json;
+use std::collections::HashMap;
 use std::ops::Deref;
 
+#[derive(Clone)]
 struct HexString(Vec<u8>);
 
 impl Deref for HexString {
@@ -135,24 +137,70 @@ struct Message {
 }
 
 fn get_pattern_by_name(name: &str) -> Option<HandshakePattern> {
-    match name {
-        "N" => Some(noise_n()),
-        "K" => Some(noise_k()),
-        "X" => Some(noise_x()),
-        "NN" => Some(noise_nn()),
-        "NK" => Some(noise_nk()),
-        "NX" => Some(noise_nx()),
-        "KN" => Some(noise_kn()),
-        "KK" => Some(noise_kk()),
-        "KX" => Some(noise_kx()),
-        "XN" => Some(noise_xn()),
-        "XK" => Some(noise_xk()),
-        "XX" => Some(noise_xx()),
-        "IN" => Some(noise_in()),
-        "IK" => Some(noise_ik()),
-        "IX" => Some(noise_ix()),
-        _ => None,
+    lazy_static! {
+        static ref PATTERNS: HashMap<&'static str, HandshakePattern> = {
+            let mut map = HashMap::new();
+            {
+                let mut insert = |p: HandshakePattern| {
+                    let name = p.get_name();
+                    map.insert(name, p);
+                };
+                insert(noise_n());
+                insert(noise_k());
+                insert(noise_x());
+                insert(noise_nn());
+                insert(noise_nk());
+                insert(noise_nx());
+                insert(noise_kn());
+                insert(noise_kk());
+                insert(noise_kx());
+                insert(noise_xn());
+                insert(noise_xk());
+                insert(noise_xx());
+                insert(noise_in());
+                insert(noise_ik());
+                insert(noise_ix());
+                insert(noise_n_psk0());
+                insert(noise_k_psk0());
+                insert(noise_x_psk1());
+                insert(noise_nn_psk0());
+                insert(noise_nn_psk2());
+                insert(noise_nk_psk0());
+                insert(noise_nk_psk2());
+                insert(noise_nx_psk2());
+                insert(noise_xn_psk3());
+                insert(noise_xk_psk3());
+                insert(noise_xx_psk3());
+                insert(noise_kn_psk0());
+                insert(noise_kn_psk2());
+                insert(noise_kk_psk0());
+                insert(noise_kk_psk2());
+                insert(noise_kx_psk2());
+                insert(noise_in_psk1());
+                insert(noise_in_psk2());
+                insert(noise_ik_psk1());
+                insert(noise_ik_psk2());
+                insert(noise_ix_psk2());
+
+                insert(noise_nn_psk0_psk2());
+                insert(noise_nx_psk0_psk1_psk2());
+                insert(noise_xn_psk1_psk3());
+                insert(noise_xk_psk0_psk3());
+                insert(noise_kn_psk1_psk2());
+                insert(noise_kk_psk0_psk2());
+                insert(noise_in_psk1_psk2());
+                insert(noise_ik_psk0_psk2());
+                insert(noise_ix_psk0_psk2());
+                insert(noise_xx_psk0_psk1());
+                insert(noise_xx_psk0_psk2());
+                insert(noise_xx_psk0_psk3());
+                insert(noise_xx_psk0_psk1_psk2_psk3());
+            }
+            map
+        };
     }
+
+    PATTERNS.get(name).cloned()
 }
 
 fn to_dh<D>(k: &HexString) -> D::Key
@@ -197,7 +245,7 @@ where
         None,
     );
     let mut h_r = HandshakeState::<D, C, H>::new(
-        pattern,
+        pattern.clone(),
         false,
         v.resp_prologue.as_ref(),
         v.resp_static.as_ref().map(to_dh::<D>),
@@ -211,6 +259,13 @@ where
 
     let mut init_ciphers = None;
     let mut resp_ciphers = None;
+
+    for psk in &v.init_psks {
+        h_i.push_psk(&psk);
+    }
+    for psk in &v.resp_psks {
+        h_r.push_psk(&psk);
+    }
 
     for m in &v.messages {
         let payload = m.payload.as_ref();
@@ -253,7 +308,7 @@ where
             }
         }
         // Let the peer send if not a one-way pattern.
-        if pattern_name.len() != 1 {
+        if !pattern.is_one_way() {
             init_send = !init_send;
         }
     }

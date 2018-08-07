@@ -76,7 +76,7 @@ impl HandshakePattern {
     }
 
     /// Get pattern name.
-    pub fn get_name(&self) -> &str {
+    pub fn get_name(&self) -> &'static str {
         self.name
     }
 
@@ -88,6 +88,28 @@ impl HandshakePattern {
                 _ => false,
             })
         })
+    }
+
+    /// Whether the pattern is a one-way pattern.
+    pub fn is_one_way(&self) -> bool {
+        self.msg_patterns.len() == 1
+    }
+
+    fn with_psks(&self, poses: &[usize], new_name: &'static str) -> HandshakePattern {
+        let mut new_msg_patterns = self.msg_patterns.clone();
+        for pos in poses {
+            if *pos == 0usize {
+                new_msg_patterns[0].insert(0, PSK);
+            } else {
+                new_msg_patterns[pos - 1].push(PSK);
+            }
+        }
+        HandshakePattern {
+            pre_i: self.pre_i.clone(),
+            pre_r: self.pre_r.clone(),
+            msg_patterns: new_msg_patterns,
+            name: new_name,
+        }
     }
 }
 
@@ -266,4 +288,176 @@ pub fn noise_xx_fallback() -> HandshakePattern {
         msg_patterns: vec![vec![E, EE, S, SE], vec![S, ES]],
         name: "XXfallback",
     }
+}
+
+// PSK Patterns.
+
+/// The `Noise_Npsk0` pattern.
+pub fn noise_n_psk0() -> HandshakePattern {
+    noise_n().with_psks(&[0], "Npsk0")
+}
+
+/// The `Noise_Kpsk0` pattern.
+pub fn noise_k_psk0() -> HandshakePattern {
+    noise_k().with_psks(&[0], "Kpsk0")
+}
+
+/// The `Noise_Xpsk1` pattern.
+pub fn noise_x_psk1() -> HandshakePattern {
+    noise_x().with_psks(&[1], "Xpsk1")
+}
+
+/// The `Noise_NNpsk0` pattern.
+pub fn noise_nn_psk0() -> HandshakePattern {
+    noise_nn().with_psks(&[0], "NNpsk0")
+}
+
+/// The `Noise_NNpsk2` pattern.
+pub fn noise_nn_psk2() -> HandshakePattern {
+    noise_nn().with_psks(&[2], "NNpsk2")
+}
+
+/// The `Noise_NKpsk0` pattern.
+pub fn noise_nk_psk0() -> HandshakePattern {
+    noise_nk().with_psks(&[0], "NKpsk0")
+}
+
+/// The `Noise_NKpsk2` pattern.
+pub fn noise_nk_psk2() -> HandshakePattern {
+    noise_nk().with_psks(&[2], "NKpsk2")
+}
+
+/// The `Noise_NXpsk2` pattern.
+pub fn noise_nx_psk2() -> HandshakePattern {
+    noise_nx().with_psks(&[2], "NXpsk2")
+}
+
+/// The `Noise_XNpsk3` pattern.
+pub fn noise_xn_psk3() -> HandshakePattern {
+    noise_xn().with_psks(&[3], "XNpsk3")
+}
+
+/// The `Noise_XKpsk3` pattern.
+pub fn noise_xk_psk3() -> HandshakePattern {
+    noise_xk().with_psks(&[3], "XKpsk3")
+}
+
+/// The `Noise_XXpsk3` pattern.
+pub fn noise_xx_psk3() -> HandshakePattern {
+    noise_xx().with_psks(&[3], "XXpsk3")
+}
+
+/// The `Noise_KNpsk0` pattern.
+pub fn noise_kn_psk0() -> HandshakePattern {
+    noise_kn().with_psks(&[0], "KNpsk0")
+}
+
+/// The `Noise_KNpsk2` pattern.
+pub fn noise_kn_psk2() -> HandshakePattern {
+    noise_kn().with_psks(&[2], "KNpsk2")
+}
+
+/// The `Noise_KKpsk0` pattern.
+pub fn noise_kk_psk0() -> HandshakePattern {
+    noise_kk().with_psks(&[0], "KKpsk0")
+}
+
+/// The `Noise_KKpsk2` pattern.
+pub fn noise_kk_psk2() -> HandshakePattern {
+    noise_kk().with_psks(&[2], "KKpsk2")
+}
+
+/// The `Noise_KXpsk2` pattern.
+pub fn noise_kx_psk2() -> HandshakePattern {
+    noise_kx().with_psks(&[2], "KXpsk2")
+}
+
+/// The `Noise_INpsk1` pattern.
+pub fn noise_in_psk1() -> HandshakePattern {
+    noise_in().with_psks(&[1], "INpsk1")
+}
+
+/// The `Noise_INpsk2` pattern.
+pub fn noise_in_psk2() -> HandshakePattern {
+    noise_in().with_psks(&[2], "INpsk2")
+}
+
+/// The `Noise_IKpsk1` pattern.
+pub fn noise_ik_psk1() -> HandshakePattern {
+    noise_ik().with_psks(&[1], "IKpsk1")
+}
+
+/// The `Noise_IKpsk2` pattern.
+pub fn noise_ik_psk2() -> HandshakePattern {
+    noise_ik().with_psks(&[2], "IKpsk2")
+}
+
+/// The `Noise_IXpsk2` pattern.
+pub fn noise_ix_psk2() -> HandshakePattern {
+    noise_ix().with_psks(&[2], "IXpsk2")
+}
+
+/// The `Noise_NNpsk0+psk2` pattern.
+pub fn noise_nn_psk0_psk2() -> HandshakePattern {
+    noise_nn().with_psks(&[0, 2], "NNpsk0+psk2")
+}
+
+/// The `Noise_NXpsk0+psk1+psk2` pattern.
+pub fn noise_nx_psk0_psk1_psk2() -> HandshakePattern {
+    noise_nx().with_psks(&[0, 1, 2], "NXpsk0+psk1+psk2")
+}
+
+/// The `Noise_XNpsk1+psk3` pattern.
+pub fn noise_xn_psk1_psk3() -> HandshakePattern {
+    noise_xn().with_psks(&[1, 3], "XNpsk1+psk3")
+}
+
+/// The `Noise_XKpsk0+psk3` pattern.
+pub fn noise_xk_psk0_psk3() -> HandshakePattern {
+    noise_xk().with_psks(&[0, 3], "XKpsk0+psk3")
+}
+
+/// The `Noise_KNpsk1+psk2` pattern.
+pub fn noise_kn_psk1_psk2() -> HandshakePattern {
+    noise_kn().with_psks(&[1, 2], "KNpsk1+psk2")
+}
+
+/// The `Noise_KKpsk0+psk2` pattern
+pub fn noise_kk_psk0_psk2() -> HandshakePattern {
+    noise_kk().with_psks(&[0, 2], "KKpsk0+psk2")
+}
+
+/// The `Noise_INpsk1+psk2` pattern.
+pub fn noise_in_psk1_psk2() -> HandshakePattern {
+    noise_in().with_psks(&[1, 2], "INpsk1+psk2")
+}
+
+/// The `Noise_IKpsk0+psk2` pattern.
+pub fn noise_ik_psk0_psk2() -> HandshakePattern {
+    noise_ik().with_psks(&[0, 2], "IKpsk0+psk2")
+}
+
+/// The `Noise_IXpsk0+psk2` pattern.
+pub fn noise_ix_psk0_psk2() -> HandshakePattern {
+    noise_ix().with_psks(&[0, 2], "IXpsk0+psk2")
+}
+
+/// The `Noise_XXpsk0+psk1` pattern.
+pub fn noise_xx_psk0_psk1() -> HandshakePattern {
+    noise_xx().with_psks(&[0, 1], "XXpsk0+psk1")
+}
+
+/// The `Noise_XXpsk0+psk2` pattern.
+pub fn noise_xx_psk0_psk2() -> HandshakePattern {
+    noise_xx().with_psks(&[0, 2], "XXpsk0+psk2")
+}
+
+/// The `Noise_XXpsk0+psk3` pattern.
+pub fn noise_xx_psk0_psk3() -> HandshakePattern {
+    noise_xx().with_psks(&[0, 3], "XXpsk0+psk3")
+}
+
+/// The `Noise_XXpsk0+psk1+psk2+psk3` pattern.
+pub fn noise_xx_psk0_psk1_psk2_psk3() -> HandshakePattern {
+    noise_xx().with_psks(&[0, 1, 2, 3], "XXpsk0+psk1+psk2+psk3")
 }
