@@ -1,9 +1,3 @@
-extern crate byteorder;
-extern crate crypto;
-extern crate noise_protocol as noise;
-extern crate rand;
-
-use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use crypto::aead::{AeadDecryptor, AeadEncryptor};
 use crypto::aes::KeySize;
 use crypto::aes_gcm::AesGcm;
@@ -15,8 +9,9 @@ use crypto::poly1305::Poly1305;
 use crypto::symmetriccipher::SynchronousStreamCipher;
 use crypto::util::{fixed_time_eq, secure_memset};
 use crypto::{blake2b, blake2s, sha2};
-use noise::*;
-use rand::{OsRng, Rng};
+use noise_protocol::*;
+use rand::rngs::OsRng;
+use rand::RngCore;
 
 pub struct SecretKey([u8; 32]);
 
@@ -117,7 +112,7 @@ impl Cipher for Aes256Gcm {
         assert_eq!(plaintext.len() + 16, out.len());
 
         let mut nonce_bytes = [0u8; 12];
-        BigEndian::write_u64(&mut nonce_bytes[4..], nonce);
+        nonce_bytes[4..].copy_from_slice(&nonce.to_be_bytes());
         let mut cipher = AesGcm::new(KeySize::KeySize256, k.as_slice(), &nonce_bytes, ad);
         let (c, t) = out.split_at_mut(plaintext.len());
         cipher.encrypt(plaintext, c, t);
@@ -133,7 +128,7 @@ impl Cipher for Aes256Gcm {
         assert_eq!(ciphertext.len(), out.len() + 16);
 
         let mut nonce_bytes = [0u8; 12];
-        BigEndian::write_u64(&mut nonce_bytes[4..], nonce);
+        nonce_bytes[4..].copy_from_slice(&nonce.to_be_bytes());
         let mut cipher = AesGcm::new(KeySize::KeySize256, k.as_slice(), &nonce_bytes, ad);
         let text_len = ciphertext.len() - 16;
         if cipher.decrypt(
@@ -164,7 +159,7 @@ impl Cipher for ChaCha20Poly1305 {
         assert_eq!(plaintext.len() + 16, out.len());
 
         let mut nonce_bytes = [0u8; 12];
-        LittleEndian::write_u64(&mut nonce_bytes[4..], nonce);
+        nonce_bytes[4..].copy_from_slice(&nonce.to_le_bytes());
 
         let mut cipher = ChaCha20::new(k.as_slice(), &nonce_bytes);
         let zeros = [0u8; 64];
@@ -174,14 +169,12 @@ impl Cipher for ChaCha20Poly1305 {
 
         let mut poly = Poly1305::new(&poly_key[..32]);
         poly.input(ad);
-        let mut padding = [0u8; 16];
+        let padding = [0u8; 16];
         poly.input(&padding[..(16 - (ad.len() % 16)) % 16]);
         poly.input(&out[..plaintext.len()]);
         poly.input(&padding[..(16 - (plaintext.len() % 16)) % 16]);
-        LittleEndian::write_u64(&mut padding, ad.len() as u64);
-        poly.input(&padding[..8]);
-        LittleEndian::write_u64(&mut padding, plaintext.len() as u64);
-        poly.input(&padding[..8]);
+        poly.input(&(ad.len() as u64).to_le_bytes());
+        poly.input(&(plaintext.len() as u64).to_le_bytes());
         poly.raw_result(&mut out[plaintext.len()..]);
     }
 
@@ -195,7 +188,7 @@ impl Cipher for ChaCha20Poly1305 {
         assert_eq!(ciphertext.len(), out.len() + 16);
 
         let mut nonce_bytes = [0u8; 12];
-        LittleEndian::write_u64(&mut nonce_bytes[4..], nonce);
+        nonce_bytes[4..].copy_from_slice(&nonce.to_le_bytes());
 
         let mut cipher = ChaCha20::new(k.as_slice(), &nonce_bytes);
         let zeros = [0u8; 64];
@@ -203,16 +196,14 @@ impl Cipher for ChaCha20Poly1305 {
         cipher.process(&zeros, &mut poly_key);
 
         let mut poly = Poly1305::new(&poly_key[..32]);
-        let mut padding = [0u8; 15];
+        let padding = [0u8; 15];
         let text_len = ciphertext.len() - 16;
         poly.input(ad);
         poly.input(&padding[..(16 - (ad.len() % 16)) % 16]);
         poly.input(&ciphertext[..text_len]);
         poly.input(&padding[..(16 - (text_len % 16)) % 16]);
-        LittleEndian::write_u64(&mut padding, ad.len() as u64);
-        poly.input(&padding[..8]);
-        LittleEndian::write_u64(&mut padding, text_len as u64);
-        poly.input(&padding[..8]);
+        poly.input(&(ad.len() as u64).to_le_bytes());
+        poly.input(&(text_len as u64).to_le_bytes());
         let mut tag = [0u8; 16];
         poly.raw_result(&mut tag);
         if !fixed_time_eq(&tag, &ciphertext[text_len..]) {
@@ -333,10 +324,8 @@ impl Hash for Blake2s {
 
 #[cfg(test)]
 mod tests {
-    extern crate rustc_serialize;
-
-    use self::rustc_serialize::hex::{FromHex, ToHex};
     use super::*;
+    use hex;
 
     #[test]
     fn chacha20poly1305_round_trip() {
@@ -369,69 +358,71 @@ mod tests {
         assert!(
             ChaCha20Poly1305::decrypt(&key, nonce, &authtext, &ciphertext, &mut resulttext).is_ok()
         );
-        assert_eq!(resulttext.to_hex(), plaintext.to_hex());
+        assert_eq!(&resulttext[..], &plaintext[..]);
     }
 
     #[test]
     fn chacha20poly1305_known_answer() {
         // RFC 7539
-        let key = "1c9240a5eb55d38af333888604f6b5f0473917c1402b80099dca5cbc207075c0"
-            .from_hex()
+        let key = hex::decode("1c9240a5eb55d38af333888604f6b5f0473917c1402b80099dca5cbc207075c0")
             .unwrap();
         let key = SecretKey::from_slice(&key);
         let nonce = 0x0807060504030201u64;
-        let ciphertext = "64a0861575861af460f062c79be643bd\
-                          5e805cfd345cf389f108670ac76c8cb2\
-                          4c6cfc18755d43eea09ee94e382d26b0\
-                          bdb7b73c321b0100d4f03b7f355894cf\
-                          332f830e710b97ce98c8a84abd0b9481\
-                          14ad176e008d33bd60f982b1ff37c855\
-                          9797a06ef4f0ef61c186324e2b350638\
-                          3606907b6a7c02b0f9f6157b53c867e4\
-                          b9166c767b804d46a59b5216cde7a4e9\
-                          9040c5a40433225ee282a1b0a06c523e\
-                          af4534d7f83fa1155b0047718cbc546a\
-                          0d072b04b3564eea1b422273f548271a\
-                          0bb2316053fa76991955ebd63159434e\
-                          cebb4e466dae5a1073a6727627097a10\
-                          49e617d91d361094fa68f0ff77987130\
-                          305beaba2eda04df997b714d6c6f2c29\
-                          a6ad5cb4022b02709b"
-            .from_hex()
-            .unwrap();
-        let tag = "eead9d67890cbb22392336fea1851f38".from_hex().unwrap();
-        let authtext = "f33388860000000000004e91".from_hex().unwrap();
+        let ciphertext = hex::decode(
+            "64a0861575861af460f062c79be643bd\
+             5e805cfd345cf389f108670ac76c8cb2\
+             4c6cfc18755d43eea09ee94e382d26b0\
+             bdb7b73c321b0100d4f03b7f355894cf\
+             332f830e710b97ce98c8a84abd0b9481\
+             14ad176e008d33bd60f982b1ff37c855\
+             9797a06ef4f0ef61c186324e2b350638\
+             3606907b6a7c02b0f9f6157b53c867e4\
+             b9166c767b804d46a59b5216cde7a4e9\
+             9040c5a40433225ee282a1b0a06c523e\
+             af4534d7f83fa1155b0047718cbc546a\
+             0d072b04b3564eea1b422273f548271a\
+             0bb2316053fa76991955ebd63159434e\
+             cebb4e466dae5a1073a6727627097a10\
+             49e617d91d361094fa68f0ff77987130\
+             305beaba2eda04df997b714d6c6f2c29\
+             a6ad5cb4022b02709b",
+        )
+        .unwrap();
+        let tag = hex::decode("eead9d67890cbb22392336fea1851f38").unwrap();
+        let authtext = hex::decode("f33388860000000000004e91").unwrap();
         let mut combined_text = [0u8; 1024];
         let mut out = [0u8; 1024];
         combined_text[..ciphertext.len()].copy_from_slice(&ciphertext);
         combined_text[ciphertext.len()..ciphertext.len() + 16].copy_from_slice(&tag);
 
-        assert!(
-            ChaCha20Poly1305::decrypt(
-                &key,
-                nonce,
-                &authtext,
-                &combined_text[..ciphertext.len() + 16],
-                &mut out[..ciphertext.len()]
-            ).is_ok()
-        );
-        let desired_plaintext = "496e7465726e65742d44726166747320\
-                                 61726520647261667420646f63756d65\
-                                 6e74732076616c696420666f72206120\
-                                 6d6178696d756d206f6620736978206d\
-                                 6f6e74687320616e64206d6179206265\
-                                 20757064617465642c207265706c6163\
-                                 65642c206f72206f62736f6c65746564\
-                                 206279206f7468657220646f63756d65\
-                                 6e747320617420616e792074696d652e\
-                                 20497420697320696e617070726f7072\
-                                 6961746520746f2075736520496e7465\
-                                 726e65742d4472616674732061732072\
-                                 65666572656e6365206d617465726961\
-                                 6c206f7220746f206369746520746865\
-                                 6d206f74686572207468616e20617320\
-                                 2fe2809c776f726b20696e2070726f67\
-                                 726573732e2fe2809d";
-        assert_eq!(out[..ciphertext.len()].to_hex(), desired_plaintext);
+        assert!(ChaCha20Poly1305::decrypt(
+            &key,
+            nonce,
+            &authtext,
+            &combined_text[..ciphertext.len() + 16],
+            &mut out[..ciphertext.len()]
+        )
+        .is_ok());
+        let desired_plaintext = hex::decode(
+            "496e7465726e65742d44726166747320\
+             61726520647261667420646f63756d65\
+             6e74732076616c696420666f72206120\
+             6d6178696d756d206f6620736978206d\
+             6f6e74687320616e64206d6179206265\
+             20757064617465642c207265706c6163\
+             65642c206f72206f62736f6c65746564\
+             206279206f7468657220646f63756d65\
+             6e747320617420616e792074696d652e\
+             20497420697320696e617070726f7072\
+             6961746520746f2075736520496e7465\
+             726e65742d4472616674732061732072\
+             65666572656e6365206d617465726961\
+             6c206f7220746f206369746520746865\
+             6d206f74686572207468616e20617320\
+             2fe2809c776f726b20696e2070726f67\
+             726573732e2fe2809d",
+        )
+        .unwrap();
+        assert_eq!(desired_plaintext, &out[..ciphertext.len()]);
     }
 }

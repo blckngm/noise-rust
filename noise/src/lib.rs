@@ -28,12 +28,12 @@ mod handshakestate;
 mod symmetricstate;
 mod traits;
 
-pub use cipherstate::CipherState;
-pub use traits::{Cipher, Hash, U8Array, DH};
+pub use crate::cipherstate::CipherState;
+pub use crate::traits::{Cipher, Hash, U8Array, DH};
 
 /// Handshake patterns.
 pub mod patterns {
-    pub use handshakepattern::*;
+    pub use crate::handshakepattern::*;
 }
 
-pub use handshakestate::{Error, ErrorKind, HandshakeState, HandshakeStateBuilder};
+pub use crate::handshakestate::{Error, ErrorKind, HandshakeState, HandshakeStateBuilder};

@@ -1,11 +1,5 @@
-extern crate byteorder;
-extern crate libsodium_sys;
-extern crate noise_protocol as noise;
-extern crate sodiumoxide;
-
-use byteorder::{ByteOrder, LittleEndian};
 use libsodium_sys::*;
-use noise::*;
+use noise_protocol::*;
 use sodiumoxide::crypto::hash::{sha256, sha512};
 use sodiumoxide::crypto::scalarmult::curve25519;
 use sodiumoxide::init as sodium_init;
@@ -14,13 +8,17 @@ use sodiumoxide::utils::memzero;
 use std::mem::{swap, uninitialized};
 use std::ptr::{null, null_mut};
 
-/// Sodiumoxide init.
+/// Initialize the library. Call the `sodium_init` function.
 ///
-/// This will make some operations potentially faster, and make `genkey` thread safe.
+/// `sodium_init()` initializes the library and should be called before any other function provided by Sodium. It is safe to call this function more than once and from different threads -- subsequent calls won't have any effects.
+/// After this function returns, all of the other functions provided by Sodium will be thread-safe.
+///
+/// Libsodium doc: <https://libsodium.gitbook.io/doc/usage>.
 pub fn init() -> Result<(), ()> {
     sodium_init()
 }
 
+#[derive(Debug)]
 pub struct X25519Key(curve25519::Scalar);
 
 impl U8Array for X25519Key {
@@ -49,6 +47,7 @@ impl U8Array for X25519Key {
     }
 }
 
+#[derive(Debug)]
 pub struct Sensitive<A: U8Array>(A);
 
 impl<A> Drop for Sensitive<A>
@@ -93,6 +92,34 @@ pub enum X25519 {}
 
 pub enum ChaCha20Poly1305 {}
 
+/// The AES-256-GCM AEAD.
+///
+/// # Portability Warning
+///
+/// The current implementation of this construction is hardware-accelerated and requires the Intel SSSE3 extensions, as well as the `aesni` and `pclmul` instructions.
+///
+/// Intel Westmere processors (introduced in 2010) and newer meet the requirements.
+///
+/// There are no plans to support non hardware-accelerated implementations of AES-GCM. If portability is a concern, use ChaCha20-Poly1305 instead.
+///
+/// Before using the functions below, hardware support for AES can be checked with <Aes256Gcm::available>.
+///
+/// The function returns `true` if the current CPU supports the AES256-GCM implementation, and `false` if it doesn't.
+///
+/// The library must have been initialized with [init](init) prior to calling this function.
+///
+/// Libsodium doc: <https://libsodium.gitbook.io/doc/secret-key_cryptography/aead/aes-256-gcm#limitations>.
+pub enum Aes256Gcm {}
+
+impl Aes256Gcm {
+    /// Check for hardware support of AES-GCM.
+    ///
+    /// The function returns `true` if the current CPU supports the AES256-GCM implementation, and `false` if it doesn't.
+    pub fn available() -> bool {
+        unsafe { crypto_aead_aes256gcm_is_available() != 0 }
+    }
+}
+
 #[derive(Default)]
 pub struct Sha256 {
     state: sha256::State,
@@ -103,16 +130,9 @@ pub struct Sha512 {
     state: sha512::State,
 }
 
+#[repr(transparent)]
 pub struct Blake2b {
-    // TODO: 64-byte alignment.
-    // crypto_generichash_statebytes() is 384, as of libsodium 1.0.8.
-    state: [u8; 384],
-}
-
-#[cfg(test)]
-#[test]
-fn test_blake2b_state_size() {
-    assert!(::std::mem::size_of::<Blake2b>() >= unsafe { crypto_generichash_statebytes() });
+    state: crypto_generichash_state,
 }
 
 impl DH for X25519 {
@@ -155,7 +175,7 @@ impl Cipher for ChaCha20Poly1305 {
         assert_eq!(out.len(), plaintext.len() + 16);
 
         let mut n = [0u8; 12];
-        LittleEndian::write_u64(&mut n[4..], nonce);
+        n[4..].copy_from_slice(&nonce.to_le_bytes());
 
         unsafe {
             crypto_aead_chacha20poly1305_ietf_encrypt(
@@ -182,10 +202,72 @@ impl Cipher for ChaCha20Poly1305 {
         assert_eq!(out.len() + 16, ciphertext.len());
 
         let mut n = [0u8; 12];
-        LittleEndian::write_u64(&mut n[4..], nonce);
+        n[4..].copy_from_slice(&nonce.to_le_bytes());
 
         let ret = unsafe {
             crypto_aead_chacha20poly1305_ietf_decrypt(
+                out.as_mut_ptr(),
+                null_mut(),
+                null_mut(),
+                ciphertext.as_ptr(),
+                ciphertext.len() as u64,
+                ad.as_ptr(),
+                ad.len() as u64,
+                n.as_ptr(),
+                k.0.as_ptr(),
+            )
+        };
+
+        if ret == 0 {
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl Cipher for Aes256Gcm {
+    type Key = Sensitive<[u8; 32]>;
+
+    fn name() -> &'static str {
+        "AESGCM"
+    }
+
+    fn encrypt(k: &Self::Key, nonce: u64, ad: &[u8], plaintext: &[u8], out: &mut [u8]) {
+        assert_eq!(out.len(), plaintext.len() + 16);
+
+        let mut n = [0u8; 12];
+        n[4..].copy_from_slice(&nonce.to_be_bytes());
+
+        unsafe {
+            crypto_aead_aes256gcm_encrypt(
+                out.as_mut_ptr(),
+                null_mut(),
+                plaintext.as_ptr(),
+                plaintext.len() as u64,
+                ad.as_ptr(),
+                ad.len() as u64,
+                null(),
+                n.as_ptr(),
+                k.0.as_ptr(),
+            );
+        }
+    }
+
+    fn decrypt(
+        k: &Self::Key,
+        nonce: u64,
+        ad: &[u8],
+        ciphertext: &[u8],
+        out: &mut [u8],
+    ) -> Result<(), ()> {
+        assert_eq!(out.len() + 16, ciphertext.len());
+
+        let mut n = [0u8; 12];
+        n[4..].copy_from_slice(&nonce.to_be_bytes());
+
+        let ret = unsafe {
+            crypto_aead_aes256gcm_decrypt(
                 out.as_mut_ptr(),
                 null_mut(),
                 null_mut(),
@@ -248,7 +330,7 @@ impl Default for Blake2b {
     fn default() -> Self {
         unsafe {
             let mut b: Blake2b = uninitialized();
-            crypto_generichash_init(b.state.as_mut_ptr() as *mut _, null(), 0, 64);
+            crypto_generichash_init(&mut b.state, null(), 0, 64);
             b
         }
     }
@@ -264,22 +346,14 @@ impl Hash for Blake2b {
 
     fn input(&mut self, data: &[u8]) {
         unsafe {
-            crypto_generichash_update(
-                self.state.as_mut_ptr() as *mut _,
-                data.as_ptr(),
-                data.len() as u64,
-            );
+            crypto_generichash_update(&mut self.state, data.as_ptr(), data.len() as u64);
         }
     }
 
     fn result(&mut self) -> Self::Output {
         unsafe {
             let mut out: Self::Output = uninitialized();
-            crypto_generichash_final(
-                self.state.as_mut_ptr() as *mut _,
-                out.as_mut().as_mut_ptr(),
-                64,
-            );
+            crypto_generichash_final(&mut self.state, out.as_mut().as_mut_ptr(), 64);
             out
         }
     }

@@ -24,26 +24,23 @@ Test vectors from [cacophony](https://github.com/centromere/cacophony) and [snow
 ## Documentation
 
 * [noise-protocol](https://docs.rs/noise-protocol)
-* [noise-ring](https://docs.rs/noise-ring)
 * [noise-sodiumoxide](https://docs.rs/noise-sodiumoxide)
 * [noise-rust-crypto](https://docs.rs/noise-rust-crypto)
 
 ## Crates
 
 This repository contains several crates. The `noise-protocol` crate
-contains the abstract implementation of the protocol
-framework. Several sibling crates, namely `noise-sodiumoxide`,
-`noise-ring` and `noise-rust-crypto`, provide concrete implementations
-of the needed crypto primitives. They are wrappers around
-`sodiumoxide`, _ring_ and `rust-crypto`, respectively.
+contains the abstract implementation of the protocol framework. Two
+sibling crates, namely `noise-sodiumoxide` and `noise-rust-crypto`,
+provide concrete implementations of the needed crypto primitives.
+They are wrappers around `sodiumoxide` and `rust-crypto`, respectively.
 
 The following table shows what primitives each of these crates
 supports:
 
 |             | X25519 | AES-256-GCM | Chacha20-Poly1305 | SHA-256 | SHA-512 | BLAKE2s | BLAKE2b |
 |-------------|:------:|:-----------:|:-----------------:|:-------:|:-------:|:-------:|:-------:|
-| _ring_      |        | ✔           | ✔                 | ✔       | ✔       |         |         |
-| sodiumoxide | ✔      |             | ✔                 | ✔       | ✔       |         | ✔       |
+| sodiumoxide | ✔      | ✔           | ✔                 | ✔       | ✔       |         | ✔       |
 | rust-crypto | ✔      | ✔           | ✔                 | ✔       | ✔       | ✔       | ✔       |
 
 You can also plug in other primitive implementations by implementing the `DH`,
@@ -53,9 +50,6 @@ You can also plug in other primitive implementations by implementing the `DH`,
 
 The `noise-protocol` crate supports `no_std`, if default features are
 disabled.
-
-The `noise-ring` crate supports `no_std`.
-
 
 ## License
 

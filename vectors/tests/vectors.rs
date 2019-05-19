@@ -3,27 +3,13 @@
 // Recommanded to run with:
 // $ RUST_BACKTRACE=1 cargo test  -- --nocapture --test-threads=1
 
-extern crate hex;
-#[macro_use]
-extern crate lazy_static;
-extern crate noise_protocol as noise;
-extern crate noise_ring;
-extern crate noise_rust_crypto;
-extern crate noise_sodiumoxide;
-extern crate rayon;
-extern crate regex;
-extern crate serde;
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-
+use hex::{decode, encode};
+use lazy_static::lazy_static;
 use noise::patterns::*;
 use noise::*;
-use noise_ring as ring;
+use noise_protocol as noise;
 use noise_rust_crypto as crypto;
 use noise_sodiumoxide as sodium;
-
-use hex::{decode, encode};
 use rayon::prelude::*;
 use regex::Regex;
 use serde::de::{Error, Unexpected};
@@ -70,14 +56,6 @@ impl Serialize for HexString {
     }
 }
 
-fn fn_false() -> bool {
-    false
-}
-
-fn fn_empty_vec<T>() -> Vec<T> {
-    vec![]
-}
-
 // See <https://github.com/noiseprotocol/noise_wiki/wiki/Test-vectors> for test
 // vectors format spec.
 #[derive(Serialize, Deserialize)]
@@ -85,25 +63,25 @@ struct Vector {
     name: Option<String>,
     protocol_name: String,
     hybrid: Option<String>,
-    #[serde(default = "fn_false")]
+    #[serde(default)]
     fail: bool,
 
     // pattern: String,
     // dh: String,
     // cipher: String,
     // hash: String,
-    #[serde(default = "fn_false")]
+    #[serde(default)]
     fallback: bool,
     fallback_pattern: Option<String>,
 
     init_prologue: HexString,
-    #[serde(default = "fn_empty_vec")]
+    #[serde(default)]
     init_psks: Vec<HexString>,
     init_static: Option<HexString>,
     init_ephemeral: HexString,
     init_remote_static: Option<HexString>,
     resp_prologue: HexString,
-    #[serde(default = "fn_empty_vec")]
+    #[serde(default)]
     resp_psks: Vec<HexString>,
     resp_static: Option<HexString>,
     resp_ephemeral: Option<HexString>,

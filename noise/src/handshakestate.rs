@@ -1,12 +1,9 @@
-extern crate arrayvec;
-extern crate core;
-
-use self::arrayvec::{ArrayString, ArrayVec};
-use self::core::fmt::{Display, Error as FmtError, Formatter, Write};
-use cipherstate::CipherState;
-use handshakepattern::{HandshakePattern, Token};
-use symmetricstate::SymmetricState;
-use traits::{Cipher, Hash, U8Array, DH};
+use crate::cipherstate::CipherState;
+use crate::handshakepattern::{HandshakePattern, Token};
+use crate::symmetricstate::SymmetricState;
+use crate::traits::{Cipher, Hash, U8Array, DH};
+use arrayvec::{ArrayString, ArrayVec};
+use core::fmt::{Display, Error as FmtError, Formatter, Write};
 
 /// Noise handshake state.
 pub struct HandshakeState<D: DH, C: Cipher, H: Hash> {
@@ -60,7 +57,8 @@ where
             D::name(),
             C::name(),
             H::name()
-        ).unwrap();
+        )
+        .unwrap();
         ret
     }
 
@@ -135,13 +133,13 @@ where
         }
 
         HandshakeState {
-            symmetric: symmetric,
-            s: s,
-            e: e,
-            rs: rs,
-            re: re,
-            is_initiator: is_initiator,
-            pattern: pattern,
+            symmetric,
+            s,
+            e,
+            rs,
+            re,
+            is_initiator,
+            pattern,
             message_index: 0,
             pattern_has_psk,
             psks: ArrayVec::new(),
@@ -508,7 +506,7 @@ impl Error {
 }
 
 impl Display for Error {
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), FmtError> {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(fmt, "{:?}", self)
     }
 }

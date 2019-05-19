@@ -1,8 +1,6 @@
 //! Handshake patterns.
 
-extern crate arrayvec;
-
-use self::arrayvec::ArrayVec;
+use arrayvec::ArrayVec;
 
 /// A token in noise message patterns.
 #[allow(missing_docs)]
@@ -47,11 +45,11 @@ impl HandshakePattern {
         name: &'static str,
     ) -> Self {
         HandshakePattern {
-            pre_i: pre_i.into_iter().cloned().collect(),
-            pre_r: pre_r.into_iter().cloned().collect(),
+            pre_i: pre_i.iter().cloned().collect(),
+            pre_r: pre_r.iter().cloned().collect(),
             msg_patterns: msg_patterns
-                .into_iter()
-                .map(|p| p.into_iter().cloned().collect())
+                .iter()
+                .map(|p| p.iter().cloned().collect())
                 .collect(),
             name,
         }

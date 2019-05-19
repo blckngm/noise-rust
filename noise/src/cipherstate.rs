@@ -1,4 +1,4 @@
-use traits::{Cipher, U8Array};
+use crate::traits::{Cipher, U8Array};
 
 /// A `CipherState` can encrypt and decrypt data.
 ///
@@ -37,7 +37,7 @@ where
     pub fn new(key: &[u8], n: u64) -> Self {
         CipherState {
             key: C::Key::from_slice(key),
-            n: n,
+            n,
         }
     }
 

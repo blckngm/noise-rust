@@ -14,23 +14,13 @@ fn gen<O: Write>(mut out: O) -> ::std::io::Result<()> {
     let mut ciphers = HashMap::new();
     ciphers.insert(
         "ChaChaPoly",
-        vec![
-            "ring::ChaCha20Poly1305",
-            "sodium::ChaCha20Poly1305",
-            "crypto::ChaCha20Poly1305",
-        ],
+        vec!["sodium::ChaCha20Poly1305", "crypto::ChaCha20Poly1305"],
     );
-    ciphers.insert("AESGCM", vec!["ring::Aes256Gcm", "crypto::Aes256Gcm"]);
+    ciphers.insert("AESGCM", vec!["sodium::Aes256Gcm", "crypto::Aes256Gcm"]);
 
     let mut hashes: HashMap<&str, Vec<&str>> = HashMap::new();
-    hashes.insert(
-        "SHA256",
-        vec!["crypto::Sha256", "ring::Sha256", "sodium::Sha256"],
-    );
-    hashes.insert(
-        "SHA512",
-        vec!["crypto::Sha512", "ring::Sha512", "sodium::Sha512"],
-    );
+    hashes.insert("SHA256", vec!["crypto::Sha256", "sodium::Sha256"]);
+    hashes.insert("SHA512", vec!["crypto::Sha512", "sodium::Sha512"]);
     hashes.insert("BLAKE2s", vec!["crypto::Blake2s"]);
     hashes.insert("BLAKE2b", vec!["crypto::Blake2b", "sodium::Blake2b"]);
 
@@ -38,14 +28,14 @@ fn gen<O: Write>(mut out: O) -> ::std::io::Result<()> {
     writeln!(
         out,
         "    let (_, dh, cipher, hash) = v.parse_protocol_name();"
-    );
+    )?;
     writeln!(out, "    match (dh, cipher, hash) {{")?;
 
     for d in dhs.keys() {
         for c in ciphers.keys() {
             for h in hashes.keys() {
                 writeln!(out, r#"        ("{}", "{}", "{}") => {{"#, d, c, h)?;
-                writeln!(out, r#"        ["#);
+                writeln!(out, r#"        ["#)?;
                 for hh in hashes.get(h).unwrap() {
                     for cc in ciphers.get(c).unwrap() {
                         for dd in dhs.get(d).unwrap() {
@@ -57,7 +47,7 @@ fn gen<O: Write>(mut out: O) -> ::std::io::Result<()> {
                         }
                     }
                 }
-                writeln!(out, r#"        ].iter().any(|x| *x)"#);
+                writeln!(out, r#"        ].iter().any(|x| *x)"#)?;
                 writeln!(out, "        }}")?;
             }
         }
@@ -68,7 +58,7 @@ fn gen<O: Write>(mut out: O) -> ::std::io::Result<()> {
         r#"        _ => false,
     }}
 }}"#
-    );
+    )?;
 
     Ok(())
 }

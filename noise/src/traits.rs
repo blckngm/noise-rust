@@ -8,13 +8,13 @@ pub trait U8Array: Sized {
     /// Create a new array filled with all zeros.
     fn new() -> Self;
     /// Create a new array filled with a same value.
-    fn new_with(u8) -> Self;
+    fn new_with(_: u8) -> Self;
     /// Create a new array from a slice.
     ///
     /// # Panics
     ///
     /// The slice must be of the same length.
-    fn from_slice(&[u8]) -> Self;
+    fn from_slice(_: &[u8]) -> Self;
     /// Length of the array.
     fn len() -> usize;
     /// As slice.
@@ -75,10 +75,10 @@ pub trait DH {
     fn genkey() -> Self::Key;
 
     /// Calculate public key from a private key.
-    fn pubkey(&Self::Key) -> Self::Pubkey;
+    fn pubkey(_: &Self::Key) -> Self::Pubkey;
 
     /// Perform DH key exchange.
-    fn dh(&Self::Key, &Self::Pubkey) -> Result<Self::Output, ()>;
+    fn dh(_: &Self::Key, _: &Self::Pubkey) -> Result<Self::Output, ()>;
 }
 
 /// An AEAD.
@@ -174,20 +174,23 @@ pub trait Hash: Default {
         let mut ipad = Self::Block::new_with(0x36u8);
         let mut opad = Self::Block::new_with(0x5cu8);
 
-        for count in 0..key.len() {
-            ipad.as_mut()[count] ^= key[count];
-            opad.as_mut()[count] ^= key[count];
+        let ipad = ipad.as_mut();
+        let opad = opad.as_mut();
+
+        for (i, b) in key.iter().enumerate() {
+            ipad[i] ^= b;
+            opad[i] ^= b;
         }
 
         let mut hasher: Self = Default::default();
-        hasher.input(ipad.as_slice());
+        hasher.input(ipad);
         for d in data {
             hasher.input(d);
         }
         let inner_output = hasher.result();
 
         hasher.reset();
-        hasher.input(opad.as_slice());
+        hasher.input(opad);
         hasher.input(inner_output.as_slice());
         hasher.result()
     }

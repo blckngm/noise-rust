@@ -1,5 +1,5 @@
-use cipherstate::CipherState;
-use traits::{Cipher, Hash, U8Array};
+use crate::cipherstate::CipherState;
+use crate::traits::{Cipher, Hash, U8Array};
 
 pub struct SymmetricState<C: Cipher, H: Hash> {
     // Instead of `has_key`, use an `Option`.
@@ -40,7 +40,7 @@ where
         SymmetricState {
             cipherstate: None,
             ck: h.clone(),
-            h: h,
+            h,
         }
     }
 
