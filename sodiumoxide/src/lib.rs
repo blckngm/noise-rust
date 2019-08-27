@@ -5,7 +5,7 @@ use sodiumoxide::crypto::scalarmult::curve25519;
 use sodiumoxide::init as sodium_init;
 use sodiumoxide::randombytes::randombytes_into;
 use sodiumoxide::utils::memzero;
-use std::mem::{swap, uninitialized};
+use std::mem::{swap, MaybeUninit};
 use std::ptr::{null, null_mut};
 
 /// Initialize the library. Call the `sodium_init` function.
@@ -329,9 +329,11 @@ impl Hash for Sha512 {
 impl Default for Blake2b {
     fn default() -> Self {
         unsafe {
-            let mut b: Blake2b = uninitialized();
-            crypto_generichash_init(&mut b.state, null(), 0, 64);
-            b
+            let mut b: MaybeUninit<crypto_generichash_state> = MaybeUninit::uninit();
+            crypto_generichash_init(b.as_mut_ptr(), null(), 0, 64);
+            Blake2b {
+                state: b.assume_init(),
+            }
         }
     }
 }
@@ -352,9 +354,9 @@ impl Hash for Blake2b {
 
     fn result(&mut self) -> Self::Output {
         unsafe {
-            let mut out: Self::Output = uninitialized();
-            crypto_generichash_final(&mut self.state, out.as_mut().as_mut_ptr(), 64);
-            out
+            let mut out: MaybeUninit<[u8; 64]> = MaybeUninit::uninit();
+            crypto_generichash_final(&mut self.state, out.as_mut_ptr() as *mut u8, 64);
+            Sensitive(out.assume_init())
         }
     }
 }
