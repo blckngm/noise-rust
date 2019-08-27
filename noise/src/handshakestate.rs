@@ -246,7 +246,7 @@ where
 
                     let encrypted_s_out = &mut out[cur..cur + len];
                     self.symmetric.encrypt_and_hash(
-                        D::pubkey(self.s.as_ref().unwrap()).as_slice(),
+                        self.rs.as_ref().expect("missing rs").as_slice(),
                         encrypted_s_out,
                     );
                     cur += len;
