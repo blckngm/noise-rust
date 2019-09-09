@@ -1,3 +1,7 @@
+# noise-sodiumoxide 0.1.1
+
+* Add `Eq` and `PartialEq` implementations.
+
 # 0.1.0
 
 ## `noise-protocol`

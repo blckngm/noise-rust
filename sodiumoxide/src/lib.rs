@@ -18,7 +18,7 @@ pub fn init() -> Result<(), ()> {
     sodium_init()
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct X25519Key(curve25519::Scalar);
 
 impl U8Array for X25519Key {
@@ -47,7 +47,7 @@ impl U8Array for X25519Key {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Sensitive<A: U8Array>(A);
 
 impl<A> Drop for Sensitive<A>
