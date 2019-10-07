@@ -8,7 +8,7 @@ build = "build.rs"
 [dev-dependencies]
 hex = "0.3.2"
 lazy_static = "1.1"
-noise-protocol = { path = "../noise", features = ["use_std"] }
+noise-protocol = { path = "../noise" }
 noise-rust-crypto = { path = "../rust-crypto" }
 noise-sodiumoxide = { path = "../sodiumoxide" }
 rayon = "1.0"
