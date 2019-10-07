@@ -1,3 +1,7 @@
+# noise-protocol 0.1.1
+
+* Update dependency arrayvec to 0.5
+
 # noise-sodiumoxide 0.1.1
 
 * Add `Eq` and `PartialEq` implementations.

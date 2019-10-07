@@ -10,5 +10,5 @@ description = "Sodiumoxide wrappers for noise-protocol."
 
 [dependencies]
 libsodium-sys = "0.2"
-noise-protocol = { path = "../noise", version = "0.1.0" }
+noise-protocol = { path = "../noise", version = "0.1.1-alpha.0" }
 sodiumoxide = "0.2"
