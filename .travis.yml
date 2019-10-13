@@ -14,5 +14,5 @@ install:
 
 script:
   - cargo fmt -- --check
-  - cd noise && cargo check --no-default-features
+  - cd noise-protocol && cargo check --no-default-features
   - cargo test --all --verbose
