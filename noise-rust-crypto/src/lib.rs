@@ -15,8 +15,8 @@
 #![no_std]
 
 use aead::NewAead;
+use getrandom::getrandom;
 use noise_protocol::*;
-use rand_os::OsRng;
 use sha2::Digest;
 use x25519_dalek::{PublicKey, StaticSecret};
 
@@ -32,8 +32,18 @@ impl DH for X25519 {
     }
 
     fn genkey() -> Self::Key {
-        let mut os_rng = OsRng::new().unwrap();
-        StaticSecret::new(&mut os_rng).to_bytes()
+        // This does not work with the latest version of rand:
+        //
+        // StaticSecret::new(&mut OsRng)
+        //
+        // Because x25519-dalek is using an older version of rand_core.
+
+        let mut k = [0u8; 32];
+        getrandom(&mut k).expect("getrandom failed");
+        k[0] &= 248;
+        k[31] &= 127;
+        k[31] |= 64;
+        k
     }
 
     fn pubkey(k: &Self::Key) -> Self::Pubkey {
