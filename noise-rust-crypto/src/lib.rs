@@ -14,14 +14,18 @@
 
 #![no_std]
 
+#[cfg(any(feature = "use-chacha20poly1305", feature = "use-aes-256-gcm",))]
 use aead::NewAead;
-use getrandom::getrandom;
+#[cfg(any(feature = "use-blake2", feature = "use-sha2",))]
+use digest::Digest;
 use noise_protocol::*;
-use sha2::Digest;
+#[cfg(feature = "use-x25519")]
 use x25519_dalek::{PublicKey, StaticSecret};
 
+#[cfg(feature = "use-x25519")]
 pub enum X25519 {}
 
+#[cfg(feature = "use-x25519")]
 impl DH for X25519 {
     type Key = [u8; 32];
     type Pubkey = [u8; 32];
@@ -39,7 +43,7 @@ impl DH for X25519 {
         // Because x25519-dalek is using an older version of rand_core.
 
         let mut k = [0u8; 32];
-        getrandom(&mut k).expect("getrandom failed");
+        getrandom::getrandom(&mut k).expect("getrandom failed");
         k[0] &= 248;
         k[31] &= 127;
         k[31] |= 64;
@@ -58,8 +62,10 @@ impl DH for X25519 {
     }
 }
 
+#[cfg(feature = "use-chacha20poly1305")]
 pub enum ChaCha20Poly1305 {}
 
+#[cfg(feature = "use-chacha20poly1305")]
 impl Cipher for ChaCha20Poly1305 {
     fn name() -> &'static str {
         "ChaChaPoly"
@@ -104,8 +110,10 @@ impl Cipher for ChaCha20Poly1305 {
     }
 }
 
+#[cfg(feature = "use-aes-256-gcm")]
 pub enum Aes256Gcm {}
 
+#[cfg(feature = "use-aes-256-gcm")]
 impl Cipher for Aes256Gcm {
     fn name() -> &'static str {
         "AESGCM"
@@ -150,9 +158,11 @@ impl Cipher for Aes256Gcm {
     }
 }
 
+#[cfg(feature = "use-sha2")]
 #[derive(Default, Clone)]
 pub struct Sha256(sha2::Sha256);
 
+#[cfg(feature = "use-sha2")]
 impl Hash for Sha256 {
     fn name() -> &'static str {
         "SHA256"
@@ -170,9 +180,11 @@ impl Hash for Sha256 {
     }
 }
 
+#[cfg(feature = "use-sha2")]
 #[derive(Default, Clone)]
 pub struct Sha512(sha2::Sha512);
 
+#[cfg(feature = "use-sha2")]
 impl Hash for Sha512 {
     fn name() -> &'static str {
         "SHA512"
@@ -190,9 +202,11 @@ impl Hash for Sha512 {
     }
 }
 
+#[cfg(feature = "use-blake2")]
 #[derive(Default, Clone)]
 pub struct Blake2s(blake2::Blake2s);
 
+#[cfg(feature = "use-blake2")]
 impl Hash for Blake2s {
     fn name() -> &'static str {
         "BLAKE2s"
@@ -210,9 +224,11 @@ impl Hash for Blake2s {
     }
 }
 
+#[cfg(feature = "use-blake2")]
 #[derive(Default, Clone)]
 pub struct Blake2b(blake2::Blake2b);
 
+#[cfg(feature = "use-blake2")]
 impl Hash for Blake2b {
     fn name() -> &'static str {
         "BLAKE2b"
