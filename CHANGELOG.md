@@ -1,3 +1,9 @@
+# noise-rust-crypto 0.2.0
+
+* Use x25519-dalek and RustCrypto crates instead of rust-crypto.
+
+* There is a feature for each primitive, you can pick exactly what you need.
+
 # noise-protocol 0.1.1
 
 * Update dependency arrayvec to 0.5

@@ -5,7 +5,7 @@ license = "Unlicense"
 name = "noise-rust-crypto"
 readme = "README.md"
 repository = "https://github.com/sopium/noise-rust"
-version = "0.2.0-dev"
+version = "0.2.0"
 description = "Wrappers of dalek and RustCrypto crates for noise-protocol"
 
 [features]
@@ -27,8 +27,8 @@ getrandom = { version = "0.1.12", optional = true }
 digest = { version = "0.8.1", optional = true }
 
 [dependencies.noise-protocol]
-path = "../noise-protocol"
-version = "0.1.2-dev"
+# path = "../noise-protocol"
+version = "0.1.1"
 
 [dev-dependencies]
 hex = "0.4"
