@@ -15,7 +15,7 @@
 #![no_std]
 
 #[cfg(any(feature = "use-chacha20poly1305", feature = "use-aes-256-gcm",))]
-use aead::NewAead;
+use aead::{Aead, NewAead};
 #[cfg(any(feature = "use-blake2", feature = "use-sha2",))]
 use digest::Digest;
 use noise_protocol::*;
