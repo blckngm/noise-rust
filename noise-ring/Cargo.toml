@@ -15,5 +15,5 @@ status = "deprecated"
 ring = "0.14.6"
 
 [dependencies.noise-protocol]
-path = "../noise"
+path = "../noise-protocol"
 version = "0.1.0"
