@@ -16,7 +16,8 @@ Test vectors from [cacophony](https://github.com/centromere/cacophony) and [snow
 ## Philosophy
 
 * Simple: straightforward implementation, small amount of code, almost no
-  dependencies, supports `no_std`.
+  dependencies, supports `no_std`. Feature `use_alloc` can optionallly be used
+  as an alternative to std.
 * Fast: static dispatch, no heap allocation necessary.
 * Unopinionated: flexible, primitive API, does not dictate how it should be
   used.

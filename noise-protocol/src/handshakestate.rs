@@ -5,6 +5,9 @@ use crate::traits::{Cipher, Hash, U8Array, DH};
 use arrayvec::{ArrayString, ArrayVec};
 use core::fmt::{Display, Error as FmtError, Formatter, Write};
 
+#[cfg(feature = "use_alloc")]
+use alloc::vec::Vec;
+
 /// Noise handshake state.
 pub struct HandshakeState<D: DH, C: Cipher, H: Hash> {
     symmetric: SymmetricState<C, H>,
@@ -187,7 +190,7 @@ where
     }
 
     /// Like [`write_message`](HandshakeState::write_message), but returns a [`Vec`].
-    #[cfg(feature = "use_std")]
+    #[cfg(any(feature = "use_std", feature = "use_alloc"))]
     pub fn write_message_vec(&mut self, payload: &[u8]) -> Result<Vec<u8>, Error> {
         let mut out = vec![0u8; payload.len() + self.get_next_message_overhead()];
         self.write_message(payload, &mut out)?;
@@ -365,7 +368,7 @@ where
     /// In addition to possible errors from
     /// [`read_message`](HandshakeState::read_message),
     /// [TooShort](ErrorKind::TooShort) may be returned.
-    #[cfg(feature = "use_std")]
+    #[cfg(any(feature = "use_std", feature = "use_alloc"))]
     pub fn read_message_vec(&mut self, data: &[u8]) -> Result<Vec<u8>, Error> {
         let overhead = self.get_next_message_overhead();
         if data.len() < overhead {
