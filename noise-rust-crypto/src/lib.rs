@@ -19,13 +19,13 @@ use aead::{Aead, NewAead};
 #[cfg(any(feature = "use-blake2", feature = "use-sha2",))]
 use digest::Digest;
 use noise_protocol::*;
-#[cfg(feature = "use-x25519")]
+#[cfg(feature = "x25519")]
 use x25519_dalek::{PublicKey, StaticSecret};
 
-#[cfg(feature = "use-x25519")]
+#[cfg(feature = "x25519")]
 pub enum X25519 {}
 
-#[cfg(feature = "use-x25519")]
+#[cfg(feature = "x25519")]
 impl DH for X25519 {
     type Key = [u8; 32];
     type Pubkey = [u8; 32];
