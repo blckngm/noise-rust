@@ -14,10 +14,6 @@
 
 #![no_std]
 
-#[cfg(any(feature = "use-chacha20poly1305", feature = "use-aes-256-gcm",))]
-use aead::{Aead, NewAead};
-#[cfg(any(feature = "use-blake2", feature = "use-sha2",))]
-use digest::Digest;
 use noise_protocol::*;
 #[cfg(feature = "x25519")]
 use x25519_dalek::{PublicKey, StaticSecret};
@@ -82,6 +78,7 @@ impl Cipher for ChaCha20Poly1305 {
         let (in_out, tag_out) = out.split_at_mut(plaintext.len());
         in_out.copy_from_slice(plaintext);
 
+        use chacha20poly1305::aead::{Aead, NewAead};
         let tag = chacha20poly1305::ChaCha20Poly1305::new((*k).into())
             .encrypt_in_place_detached(&full_nonce.into(), ad, in_out)
             .unwrap();
@@ -104,6 +101,7 @@ impl Cipher for ChaCha20Poly1305 {
         out.copy_from_slice(&ciphertext[..out.len()]);
         let tag = &ciphertext[out.len()..];
 
+        use chacha20poly1305::aead::{Aead, NewAead};
         chacha20poly1305::ChaCha20Poly1305::new((*k).into())
             .decrypt_in_place_detached(&full_nonce.into(), ad, out, tag.into())
             .map_err(|_| ())
@@ -130,6 +128,7 @@ impl Cipher for Aes256Gcm {
         let (in_out, tag_out) = out.split_at_mut(plaintext.len());
         in_out.copy_from_slice(plaintext);
 
+        use aes_gcm::aead::{Aead, NewAead};
         let tag = aes_gcm::Aes256Gcm::new((*k).into())
             .encrypt_in_place_detached(&full_nonce.into(), ad, in_out)
             .unwrap();
@@ -152,6 +151,7 @@ impl Cipher for Aes256Gcm {
         out.copy_from_slice(&ciphertext[..out.len()]);
         let tag = &ciphertext[out.len()..];
 
+        use aes_gcm::aead::{Aead, NewAead};
         aes_gcm::Aes256Gcm::new((*k).into())
             .decrypt_in_place_detached(&full_nonce.into(), ad, out, tag.into())
             .map_err(|_| ())
@@ -172,10 +172,12 @@ impl Hash for Sha256 {
     type Output = [u8; 32];
 
     fn input(&mut self, data: &[u8]) {
+        use sha2::Digest;
         self.0.input(data);
     }
 
     fn result(&mut self) -> Self::Output {
+        use sha2::Digest;
         self.0.clone().result().into()
     }
 }
@@ -194,10 +196,12 @@ impl Hash for Sha512 {
     type Output = [u8; 64];
 
     fn input(&mut self, data: &[u8]) {
+        use sha2::Digest;
         self.0.input(data);
     }
 
     fn result(&mut self) -> Self::Output {
+        use sha2::Digest;
         Self::Output::from_slice(self.0.clone().result().as_ref())
     }
 }
@@ -216,10 +220,12 @@ impl Hash for Blake2s {
     type Output = [u8; 32];
 
     fn input(&mut self, data: &[u8]) {
+        use blake2::Digest;
         self.0.input(data);
     }
 
     fn result(&mut self) -> Self::Output {
+        use blake2::Digest;
         self.0.clone().result().into()
     }
 }
@@ -238,10 +244,12 @@ impl Hash for Blake2b {
     type Output = [u8; 64];
 
     fn input(&mut self, data: &[u8]) {
+        use blake2::Digest;
         self.0.input(data);
     }
 
     fn result(&mut self) -> Self::Output {
+        use blake2::Digest;
         Self::Output::from_slice(self.0.clone().result().as_ref())
     }
 }
