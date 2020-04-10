@@ -1,5 +1,8 @@
 use crate::traits::{Cipher, U8Array};
 
+#[cfg(feature = "use_alloc")]
+use alloc::vec::Vec;
+
 /// A `CipherState` can encrypt and decrypt data.
 ///
 /// Mostly like `CipherState` in the spec, but must be created with a key.
@@ -71,7 +74,7 @@ where
     }
 
     /// Encryption, returns ciphertext as `Vec<u8>`.
-    #[cfg(feature = "use_std")]
+    #[cfg(any(feature = "use_std", feature = "use_alloc"))]
     pub fn encrypt_vec(&mut self, plaintext: &[u8]) -> Vec<u8> {
         let mut out = vec![0u8; plaintext.len() + 16];
         self.encrypt(plaintext, &mut out);
@@ -84,7 +87,7 @@ where
     }
 
     /// Decryption, returns plaintext as `Vec<u8>`.
-    #[cfg(feature = "use_std")]
+    #[cfg(any(feature = "use_std", feature = "use_alloc"))]
     pub fn decrypt_vec(&mut self, ciphertext: &[u8]) -> Result<Vec<u8>, ()> {
         if ciphertext.len() < 16 {
             return Err(());

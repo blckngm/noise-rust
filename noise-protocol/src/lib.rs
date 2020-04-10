@@ -28,6 +28,10 @@ mod handshakestate;
 mod symmetricstate;
 mod traits;
 
+#[cfg(feature = "use_alloc")]
+#[macro_use]
+extern crate alloc;
+
 pub use crate::cipherstate::CipherState;
 pub use crate::traits::{Cipher, Hash, U8Array, DH};
 

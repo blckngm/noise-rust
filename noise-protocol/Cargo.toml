@@ -16,3 +16,4 @@ arrayvec = { version = "0.5", default-features = false }
 [features]
 default = ["use_std"]
 use_std = []
+use_alloc = []
