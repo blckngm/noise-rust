@@ -25,12 +25,13 @@ x25519-dalek = { version = "0.6.0", optional = true, default-features = false }
 aes-gcm = { version = "0.5.0", optional = true }
 chacha20poly1305 = { version = "0.4.1", optional = true }
 blake2 = { version = "0.8.1", optional = true }
-sha2 = { version = "0.8.0", optional = true }
+sha2 = { version = "0.8.0", optional = true, default-features = false }
 getrandom = { version = "0.1.12", optional = true }
 
 [dependencies.noise-protocol]
 path = "../noise-protocol"
 version = "0.1.2-dev"
+default-features = false
 
 [dev-dependencies]
 hex = "0.4"
