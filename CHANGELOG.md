@@ -1,4 +1,4 @@
-# noise-protocol 0.1.2
+# noise-protocol 0.1.3
 
 * Support `Vec` based APIs in no-std via the `alloc` crate. (#19)
 
