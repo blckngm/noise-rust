@@ -1,3 +1,11 @@
+# noise-protocol 0.1.2
+
+* Support `Vec` based APIs in no-std via the `alloc` crate. (#19)
+
+# noise-rust-crypto 0.2.1
+
+* Support for no-std. (#16, #18)
+
 # noise-rust-crypto 0.2.0
 
 * Use x25519-dalek and RustCrypto crates instead of rust-crypto.
