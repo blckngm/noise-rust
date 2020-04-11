@@ -1,3 +1,7 @@
+# noise-rust-crypto 0.3.0
+
+* Zero sensitive material on drop. (#20)
+
 # noise-protocol 0.1.3
 
 * Support `Vec` based APIs in no-std via the `alloc` crate. (#19)
