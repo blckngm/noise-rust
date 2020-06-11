@@ -1,3 +1,9 @@
+# noise-rust-crypto 0.4.0
+
+* Change output type of `Blake2s` to use zeroing wrapping as well.
+
+* Update dependencies to newer version.
+
 # noise-rust-crypto 0.3.0
 
 * Zero sensitive material on drop. (#20)
