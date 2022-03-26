@@ -9,20 +9,17 @@ use std::path::Path;
 /// Generate the crypto implementations dispatch function.
 fn gen<O: Write>(mut out: O) -> ::std::io::Result<()> {
     let mut dhs = HashMap::new();
-    dhs.insert("25519", vec!["sodium::X25519", "crypto::X25519"]);
+    dhs.insert("25519", vec!["crypto::X25519"]);
 
     let mut ciphers = HashMap::new();
-    ciphers.insert(
-        "ChaChaPoly",
-        vec!["sodium::ChaCha20Poly1305", "crypto::ChaCha20Poly1305"],
-    );
-    ciphers.insert("AESGCM", vec!["sodium::Aes256Gcm", "crypto::Aes256Gcm"]);
+    ciphers.insert("ChaChaPoly", vec!["crypto::ChaCha20Poly1305"]);
+    ciphers.insert("AESGCM", vec!["crypto::Aes256Gcm"]);
 
     let mut hashes: HashMap<&str, Vec<&str>> = HashMap::new();
-    hashes.insert("SHA256", vec!["crypto::Sha256", "sodium::Sha256"]);
-    hashes.insert("SHA512", vec!["crypto::Sha512", "sodium::Sha512"]);
+    hashes.insert("SHA256", vec!["crypto::Sha256"]);
+    hashes.insert("SHA512", vec!["crypto::Sha512"]);
     hashes.insert("BLAKE2s", vec!["crypto::Blake2s"]);
-    hashes.insert("BLAKE2b", vec!["crypto::Blake2b", "sodium::Blake2b"]);
+    hashes.insert("BLAKE2b", vec!["crypto::Blake2b"]);
 
     writeln!(out, "fn verify_vector(v: Vector) -> bool {{")?;
     writeln!(

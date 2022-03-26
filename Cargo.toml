@@ -1,3 +1,2 @@
 [workspace]
-members = ["noise-protocol", "noise-rust-crypto", "noise-sodiumoxide", "vectors"]
-exclude = ["noise-ring"]
+members = ["noise-protocol", "noise-rust-crypto", "vectors"]

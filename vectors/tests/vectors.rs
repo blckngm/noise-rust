@@ -9,7 +9,6 @@ use noise::patterns::*;
 use noise::*;
 use noise_protocol as noise;
 use noise_rust_crypto as crypto;
-use noise_sodiumoxide as sodium;
 use rayon::prelude::*;
 use regex::Regex;
 use serde::de::{Error, Unexpected};
@@ -408,8 +407,6 @@ where
 include!(concat!(env!("OUT_DIR"), "/crypto_impls.rs"));
 
 fn verify_vectors(json_vectors: &str) {
-    sodium::init().unwrap();
-
     let v: json::Value = json::from_str(json_vectors).unwrap();
     let vectors: Vec<Vector> =
         json::from_value(v.as_object().unwrap().get("vectors").unwrap().clone()).unwrap();

@@ -31,10 +31,8 @@ Test vectors from [cacophony](https://github.com/centromere/cacophony) and [snow
 ## Crates
 
 This repository contains several crates. The `noise-protocol` crate contains the
-abstract implementation of the protocol framework. Two sibling crates, namely
-`noise-sodiumoxide` and `noise-rust-crypto`, provide concrete implementations of
-the needed crypto primitives. `noise-sodiumoxide` is a wrapper for
-`sodiumoxide`, and `noise-rust-crypto` is a wrapper for `x25519-dalek` and
+abstract implementation of the protocol framework. `noise-rust-crypto` provides concrete implementations of
+the needed crypto primitives. It is a wrapper for `x25519-dalek` and
 [RustCrypto](`https://github.com/RustCrypto`) crates.
 
 The following table shows what primitives each of these crates
@@ -42,7 +40,6 @@ supports:
 
 |             | X25519 | AES-256-GCM | Chacha20-Poly1305 | SHA-256 | SHA-512 | BLAKE2s | BLAKE2b |
 |-------------|:------:|:-----------:|:-----------------:|:-------:|:-------:|:-------:|:-------:|
-| sodiumoxide | ✔      | ✔           | ✔                 | ✔       | ✔       |         | ✔       |
 | rust-crypto | ✔      | ✔           | ✔                 | ✔       | ✔       | ✔       | ✔       |
 
 You can also plug in other primitive implementations by implementing the `DH`,
