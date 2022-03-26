@@ -25,7 +25,6 @@ Test vectors from [cacophony](https://github.com/centromere/cacophony) and [snow
 ## Documentation
 
 * [noise-protocol](https://docs.rs/noise-protocol)
-* [noise-sodiumoxide](https://docs.rs/noise-sodiumoxide)
 * [noise-rust-crypto](https://docs.rs/noise-rust-crypto)
 
 ## Crates
