@@ -433,6 +433,16 @@ where
         &self.pattern
     }
 
+    /// Get the message index of this [`HandshakeState`].
+    pub fn get_index(&self) -> usize {
+        self.message_index
+    }
+
+    /// Set the message index of this [`HandshakeState`] manually.
+    pub fn set_index(&mut self, index: usize) {
+        self.message_index = index;
+    }
+
     fn perform_dh(&self, t: Token) -> Result<D::Output, ()> {
         let dh = |a: Option<&D::Key>, b: Option<&D::Pubkey>| D::dh(a.unwrap(), b.unwrap());
 
