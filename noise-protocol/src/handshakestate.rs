@@ -19,7 +19,7 @@ pub struct HandshakeState<D: DH, C: Cipher, H: Hash> {
     pattern: HandshakePattern,
     message_index: usize,
     pattern_has_psk: bool,
-    psks: ArrayVec<[[u8; 32]; 4]>,
+    psks: ArrayVec<[u8; 32], 4>,
 }
 
 impl<D, C, H> Clone for HandshakeState<D, C, H>
@@ -51,7 +51,7 @@ where
     H: Hash,
 {
     /// Get protocol name, e.g. Noise_IK_25519_ChaChaPoly_BLAKE2s.
-    fn get_name(pattern_name: &str) -> ArrayString<[u8; 256]> {
+    fn get_name(pattern_name: &str) -> ArrayString<256> {
         let mut ret = ArrayString::new();
         write!(
             &mut ret,
