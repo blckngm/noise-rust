@@ -1,3 +1,7 @@
+# noise-protocol 0.1.4
+
+* Update arrayvec dependency to 0.7.2
+
 # noise-rust-crypto 0.4.0
 
 * Change output type of `Blake2s` to use zeroing wrapping as well.
