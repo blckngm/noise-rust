@@ -87,6 +87,29 @@ impl Cipher for ChaCha20Poly1305 {
         tag_out.copy_from_slice(tag.as_ref())
     }
 
+    fn encrypt_in_place(
+        k: &Self::Key,
+        nonce: u64,
+        ad: &[u8],
+        in_out: &mut [u8],
+        plaintext_len: usize,
+    ) -> usize {
+        assert!(plaintext_len.checked_add(16) < Some(in_out.len()));
+
+        let mut full_nonce = [0u8; 12];
+        full_nonce[4..].copy_from_slice(&nonce.to_le_bytes());
+
+        let (in_out, tag_out) = in_out[..plaintext_len + 16].split_at_mut(plaintext_len);
+
+        use chacha20poly1305::aead::{AeadInPlace, NewAead};
+        let tag = chacha20poly1305::ChaCha20Poly1305::new(&(**k).into())
+            .encrypt_in_place_detached(&full_nonce.into(), ad, in_out)
+            .unwrap();
+        tag_out.copy_from_slice(tag.as_ref());
+
+        plaintext_len + 16
+    }
+
     fn decrypt(
         k: &Self::Key,
         nonce: u64,
@@ -106,6 +129,29 @@ impl Cipher for ChaCha20Poly1305 {
         chacha20poly1305::ChaCha20Poly1305::new(&(**k).into())
             .decrypt_in_place_detached(&full_nonce.into(), ad, out, tag.into())
             .map_err(|_| ())
+    }
+
+    fn decrypt_in_place(
+        k: &Self::Key,
+        nonce: u64,
+        ad: &[u8],
+        in_out: &mut [u8],
+        ciphertext_len: usize,
+    ) -> Result<usize, ()> {
+        assert!(ciphertext_len <= in_out.len());
+        assert!(ciphertext_len >= 16);
+
+        let mut full_nonce = [0u8; 12];
+        full_nonce[4..].copy_from_slice(&nonce.to_le_bytes());
+
+        let (in_out, tag) = in_out[..ciphertext_len].split_at_mut(ciphertext_len - 16);
+
+        use chacha20poly1305::aead::{AeadInPlace, NewAead};
+        chacha20poly1305::ChaCha20Poly1305::new(&(**k).into())
+            .decrypt_in_place_detached(&full_nonce.into(), ad, in_out, tag.as_ref().into())
+            .map_err(|_| ())?;
+
+        Ok(in_out.len())
     }
 }
 
@@ -137,6 +183,29 @@ impl Cipher for Aes256Gcm {
         tag_out.copy_from_slice(tag.as_ref())
     }
 
+    fn encrypt_in_place(
+        k: &Self::Key,
+        nonce: u64,
+        ad: &[u8],
+        in_out: &mut [u8],
+        plaintext_len: usize,
+    ) -> usize {
+        assert!(plaintext_len.checked_add(16) < Some(in_out.len()));
+
+        let mut full_nonce = [0u8; 12];
+        full_nonce[4..].copy_from_slice(&nonce.to_le_bytes());
+
+        let (in_out, tag_out) = in_out[..plaintext_len + 16].split_at_mut(plaintext_len);
+
+        use aes_gcm::aead::{AeadInPlace, NewAead};
+        let tag = aes_gcm::Aes256Gcm::new(&(**k).into())
+            .encrypt_in_place_detached(&full_nonce.into(), ad, in_out)
+            .unwrap();
+        tag_out.copy_from_slice(tag.as_ref());
+
+        plaintext_len + 16
+    }
+
     fn decrypt(
         k: &Self::Key,
         nonce: u64,
@@ -156,6 +225,29 @@ impl Cipher for Aes256Gcm {
         aes_gcm::Aes256Gcm::new(&(**k).into())
             .decrypt_in_place_detached(&full_nonce.into(), ad, out, tag.into())
             .map_err(|_| ())
+    }
+
+    fn decrypt_in_place(
+        k: &Self::Key,
+        nonce: u64,
+        ad: &[u8],
+        in_out: &mut [u8],
+        ciphertext_len: usize,
+    ) -> Result<usize, ()> {
+        assert!(ciphertext_len <= in_out.len());
+        assert!(ciphertext_len >= 16);
+
+        let mut full_nonce = [0u8; 12];
+        full_nonce[4..].copy_from_slice(&nonce.to_le_bytes());
+
+        let (in_out, tag) = in_out[..ciphertext_len].split_at_mut(ciphertext_len - 16);
+
+        use aes_gcm::aead::{AeadInPlace, NewAead};
+        aes_gcm::Aes256Gcm::new(&(**k).into())
+            .decrypt_in_place_detached(&full_nonce.into(), ad, in_out, tag.as_ref().into())
+            .map_err(|_| ())?;
+
+        Ok(in_out.len())
     }
 }
 
