@@ -255,6 +255,8 @@ where
                 } else {
                     (&mut h_r, &mut h_i)
                 };
+                assert_eq!(h_send.is_write_turn(), true);
+                assert_eq!(h_recv.is_write_turn(), false);
                 let overhead = h_send.get_next_message_overhead();
                 assert_eq!(payload.len() + overhead, expected_ciphertext.len());
                 let c = h_send.write_message_vec(payload).unwrap();

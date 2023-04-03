@@ -218,7 +218,7 @@ where
         debug_assert_eq!(out.len(), payload.len() + self.get_next_message_overhead());
 
         // Check that it is our turn to send.
-        assert!(self.message_index % 2 == if self.is_initiator { 0 } else { 1 });
+        assert!(self.is_write_turn());
 
         // Get the message pattern.
         let m = self.pattern.get_message_pattern(self.message_index);
@@ -306,7 +306,7 @@ where
     pub fn read_message(&mut self, data: &[u8], out: &mut [u8]) -> Result<(), Error> {
         debug_assert_eq!(out.len() + self.get_next_message_overhead(), data.len());
 
-        assert!(self.message_index % 2 == if self.is_initiator { 1 } else { 0 });
+        assert!(!self.is_write_turn());
 
         // Get the message pattern.
         let m = self.pattern.get_message_pattern(self.message_index);
@@ -431,6 +431,11 @@ where
     /// Get handshake pattern this [`HandshakeState`] uses.
     pub fn get_pattern(&self) -> &HandshakePattern {
         &self.pattern
+    }
+
+    /// Check whether it is our turn to send in the handshake state.
+    pub fn is_write_turn(&self) -> bool {
+        self.message_index % 2 == if self.is_initiator { 0 } else { 1 }
     }
 
     fn perform_dh(&self, t: Token) -> Result<D::Output, ()> {
