@@ -2,7 +2,6 @@
 
 [![Crates.io](https://img.shields.io/crates/v/noise-protocol.svg)](https://crates.io/crates/noise-protocol)
 [![Docs.rs](https://docs.rs/noise-protocol/badge.svg)](https://docs.rs/noise-protocol)
-[![Build Status](https://travis-ci.org/sopium/noise-rust.svg?branch=master)](https://travis-ci.org/sopium/noise-rust)
 
 Implementation of the [Noise Protocol
 Framework](http://noiseprotocol.org) in Rust.

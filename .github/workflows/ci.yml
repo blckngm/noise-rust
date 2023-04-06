@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [staging, trying]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.66.0
+          default: true
+          profile: minimal
+          components: rustfmt
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+
+      - name: tests
+        run: ./test.sh
