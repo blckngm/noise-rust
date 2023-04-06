@@ -11,4 +11,4 @@ cargo check --no-default-features --features=use-x25519,use-chacha20poly1305,use
 cargo check --no-default-features --features=use-aes-256-gcm,use-chacha20poly1305,use-blake2,use-sha2
 cd ..
 
-cargo test --all --verbose
+NOISE_RUST_TEST_IN_PLACE=1 cargo test --all --verbose

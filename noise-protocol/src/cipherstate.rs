@@ -52,6 +52,14 @@ where
     /// AEAD encryption.
     pub fn encrypt_ad(&mut self, authtext: &[u8], plaintext: &[u8], out: &mut [u8]) {
         C::encrypt(&self.key, self.n, authtext, plaintext, out);
+        #[cfg(feature = "use_std")]
+        if option_env!("NOISE_RUST_TEST_IN_PLACE").is_some() {
+            let mut inout = plaintext.to_vec();
+            inout.extend_from_slice(&[0; 16]);
+            let l = C::encrypt_in_place(&self.key, self.n, authtext, &mut inout, plaintext.len());
+            assert_eq!(inout, out);
+            assert_eq!(l, out.len());
+        }
         // This will fail when n == 2 ^ 64 - 1, complying to the spec.
         self.n = self.n.checked_add(1).unwrap();
     }
@@ -76,7 +84,17 @@ where
         ciphertext: &[u8],
         out: &mut [u8],
     ) -> Result<(), ()> {
-        C::decrypt(&self.key, self.n, authtext, ciphertext, out)?;
+        let r = C::decrypt(&self.key, self.n, authtext, ciphertext, out);
+        #[cfg(feature = "use_std")]
+        if option_env!("NOISE_RUST_TEST_IN_PLACE").is_some() {
+            let mut inout = ciphertext.to_vec();
+            let r2 = C::decrypt_in_place(&self.key, self.n, authtext, &mut inout, ciphertext.len());
+            assert_eq!(r.map(|_| out.len()), r2);
+            if r.is_ok() {
+                assert_eq!(&inout[..out.len()], out);
+            }
+        }
+        r?;
         self.n = self.n.checked_add(1).unwrap();
         Ok(())
     }
