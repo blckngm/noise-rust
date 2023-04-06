@@ -1,0 +1,20 @@
+[package]
+edition = "2021"
+authors = ["Guanhao Yin <sopium@mysterious.site>"]
+license = "Unlicense"
+name = "noise-ring"
+readme = "README.md"
+repository = "https://github.com/sopium/noise-rust"
+version = "0.2.0"
+description = "Ring wrappers for nosie-protocol."
+
+[dependencies]
+ring = "0.16"
+
+[dependencies.noise-protocol]
+path = "../noise-protocol"
+version = "0.1"
+
+[dependencies.noise-rust-crypto]
+path = "../noise-rust-crypto"
+version = "0.5"

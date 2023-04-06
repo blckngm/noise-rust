@@ -38,6 +38,7 @@ supports:
 
 |             | X25519 | AES-256-GCM | Chacha20-Poly1305 | SHA-256 | SHA-512 | BLAKE2s | BLAKE2b |
 |-------------|:------:|:-----------:|:-----------------:|:-------:|:-------:|:-------:|:-------:|
+| rust-ring   |        | ✔           | ✔                 | ✔       | ✔       |         |         |
 | rust-crypto | ✔      | ✔           | ✔                 | ✔       | ✔       | ✔       | ✔       |
 
 You can also plug in other primitive implementations by implementing the `DH`,
