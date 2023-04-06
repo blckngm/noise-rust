@@ -8,6 +8,7 @@ use lazy_static::lazy_static;
 use noise::patterns::*;
 use noise::*;
 use noise_protocol as noise;
+use noise_ring as ring_crypto;
 use noise_rust_crypto as crypto;
 use rayon::prelude::*;
 use regex::Regex;
