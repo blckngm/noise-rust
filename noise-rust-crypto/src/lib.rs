@@ -94,7 +94,9 @@ impl Cipher for ChaCha20Poly1305 {
         in_out: &mut [u8],
         plaintext_len: usize,
     ) -> usize {
-        assert!(plaintext_len.checked_add(16) < Some(in_out.len()));
+        assert!(plaintext_len
+            .checked_add(16)
+            .map_or(false, |l| l <= in_out.len()));
 
         let mut full_nonce = [0u8; 12];
         full_nonce[4..].copy_from_slice(&nonce.to_le_bytes());
@@ -190,10 +192,12 @@ impl Cipher for Aes256Gcm {
         in_out: &mut [u8],
         plaintext_len: usize,
     ) -> usize {
-        assert!(plaintext_len.checked_add(16) < Some(in_out.len()));
+        assert!(plaintext_len
+            .checked_add(16)
+            .map_or(false, |l| l <= in_out.len()));
 
         let mut full_nonce = [0u8; 12];
-        full_nonce[4..].copy_from_slice(&nonce.to_le_bytes());
+        full_nonce[4..].copy_from_slice(&nonce.to_be_bytes());
 
         let (in_out, tag_out) = in_out[..plaintext_len + 16].split_at_mut(plaintext_len);
 
@@ -238,7 +242,7 @@ impl Cipher for Aes256Gcm {
         assert!(ciphertext_len >= 16);
 
         let mut full_nonce = [0u8; 12];
-        full_nonce[4..].copy_from_slice(&nonce.to_le_bytes());
+        full_nonce[4..].copy_from_slice(&nonce.to_be_bytes());
 
         let (in_out, tag) = in_out[..ciphertext_len].split_at_mut(ciphertext_len - 16);
 
