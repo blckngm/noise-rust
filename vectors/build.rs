@@ -12,12 +12,18 @@ fn gen<O: Write>(mut out: O) -> ::std::io::Result<()> {
     dhs.insert("25519", vec!["crypto::X25519"]);
 
     let mut ciphers = HashMap::new();
-    ciphers.insert("ChaChaPoly", vec!["crypto::ChaCha20Poly1305"]);
-    ciphers.insert("AESGCM", vec!["crypto::Aes256Gcm"]);
+    ciphers.insert(
+        "ChaChaPoly",
+        vec!["crypto::ChaCha20Poly1305", "ring_crypto::ChaCha20Poly1305"],
+    );
+    ciphers.insert(
+        "AESGCM",
+        vec!["crypto::Aes256Gcm", "ring_crypto::Aes256Gcm"],
+    );
 
     let mut hashes: HashMap<&str, Vec<&str>> = HashMap::new();
-    hashes.insert("SHA256", vec!["crypto::Sha256"]);
-    hashes.insert("SHA512", vec!["crypto::Sha512"]);
+    hashes.insert("SHA256", vec!["crypto::Sha256", "ring_crypto::Sha256"]);
+    hashes.insert("SHA512", vec!["crypto::Sha512", "ring_crypto::Sha512"]);
     hashes.insert("BLAKE2s", vec!["crypto::Blake2s"]);
     hashes.insert("BLAKE2b", vec!["crypto::Blake2b"]);
 

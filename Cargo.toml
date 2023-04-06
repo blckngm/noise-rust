@@ -1,2 +1,2 @@
 [workspace]
-members = ["noise-protocol", "noise-rust-crypto", "vectors"]
+members = ["noise-protocol", "noise-rust-crypto", "noise-ring", "vectors"]
