@@ -33,18 +33,7 @@ impl DH for X25519 {
     }
 
     fn genkey() -> Self::Key {
-        // This does not work with the latest version of rand:
-        //
-        // StaticSecret::new(&mut OsRng)
-        //
-        // Because x25519-dalek is using an older version of rand_core.
-
-        let mut k = Self::Key::new();
-        getrandom::getrandom(&mut *k).expect("getrandom failed");
-        k[0] &= 248;
-        k[31] &= 127;
-        k[31] |= 64;
-        k
+        Self::Key::from_slice(StaticSecret::random().as_bytes())
     }
 
     fn pubkey(k: &Self::Key) -> Self::Pubkey {
@@ -79,7 +68,7 @@ impl Cipher for ChaCha20Poly1305 {
         let (in_out, tag_out) = out.split_at_mut(plaintext.len());
         in_out.copy_from_slice(plaintext);
 
-        use chacha20poly1305::aead::{AeadInPlace, NewAead};
+        use chacha20poly1305::{AeadInPlace, KeyInit};
         let tag = chacha20poly1305::ChaCha20Poly1305::new(&(**k).into())
             .encrypt_in_place_detached(&full_nonce.into(), ad, in_out)
             .unwrap();
@@ -103,7 +92,7 @@ impl Cipher for ChaCha20Poly1305 {
 
         let (in_out, tag_out) = in_out[..plaintext_len + 16].split_at_mut(plaintext_len);
 
-        use chacha20poly1305::aead::{AeadInPlace, NewAead};
+        use chacha20poly1305::{AeadInPlace, KeyInit};
         let tag = chacha20poly1305::ChaCha20Poly1305::new(&(**k).into())
             .encrypt_in_place_detached(&full_nonce.into(), ad, in_out)
             .unwrap();
@@ -127,7 +116,7 @@ impl Cipher for ChaCha20Poly1305 {
         out.copy_from_slice(&ciphertext[..out.len()]);
         let tag = &ciphertext[out.len()..];
 
-        use chacha20poly1305::aead::{AeadInPlace, NewAead};
+        use chacha20poly1305::{AeadInPlace, KeyInit};
         chacha20poly1305::ChaCha20Poly1305::new(&(**k).into())
             .decrypt_in_place_detached(&full_nonce.into(), ad, out, tag.into())
             .map_err(|_| ())
@@ -148,7 +137,7 @@ impl Cipher for ChaCha20Poly1305 {
 
         let (in_out, tag) = in_out[..ciphertext_len].split_at_mut(ciphertext_len - 16);
 
-        use chacha20poly1305::aead::{AeadInPlace, NewAead};
+        use chacha20poly1305::{AeadInPlace, KeyInit};
         chacha20poly1305::ChaCha20Poly1305::new(&(**k).into())
             .decrypt_in_place_detached(&full_nonce.into(), ad, in_out, tag.as_ref().into())
             .map_err(|_| ())?;
@@ -177,7 +166,7 @@ impl Cipher for Aes256Gcm {
         let (in_out, tag_out) = out.split_at_mut(plaintext.len());
         in_out.copy_from_slice(plaintext);
 
-        use aes_gcm::aead::{AeadInPlace, NewAead};
+        use aes_gcm::{AeadInPlace, KeyInit};
         let tag = aes_gcm::Aes256Gcm::new(&(**k).into())
             .encrypt_in_place_detached(&full_nonce.into(), ad, in_out)
             .unwrap();
@@ -201,7 +190,7 @@ impl Cipher for Aes256Gcm {
 
         let (in_out, tag_out) = in_out[..plaintext_len + 16].split_at_mut(plaintext_len);
 
-        use aes_gcm::aead::{AeadInPlace, NewAead};
+        use aes_gcm::{AeadInPlace, KeyInit};
         let tag = aes_gcm::Aes256Gcm::new(&(**k).into())
             .encrypt_in_place_detached(&full_nonce.into(), ad, in_out)
             .unwrap();
@@ -225,7 +214,7 @@ impl Cipher for Aes256Gcm {
         out.copy_from_slice(&ciphertext[..out.len()]);
         let tag = &ciphertext[out.len()..];
 
-        use aes_gcm::aead::{AeadInPlace, NewAead};
+        use aes_gcm::{AeadInPlace, KeyInit};
         aes_gcm::Aes256Gcm::new(&(**k).into())
             .decrypt_in_place_detached(&full_nonce.into(), ad, out, tag.into())
             .map_err(|_| ())
@@ -246,7 +235,7 @@ impl Cipher for Aes256Gcm {
 
         let (in_out, tag) = in_out[..ciphertext_len].split_at_mut(ciphertext_len - 16);
 
-        use aes_gcm::aead::{AeadInPlace, NewAead};
+        use aes_gcm::{AeadInPlace, KeyInit};
         aes_gcm::Aes256Gcm::new(&(**k).into())
             .decrypt_in_place_detached(&full_nonce.into(), ad, in_out, tag.as_ref().into())
             .map_err(|_| ())?;
