@@ -9,21 +9,22 @@ version = "0.6.0-rc.1"
 description = "Wrappers of dalek and RustCrypto crates for noise-protocol"
 
 [features]
-default = ["use-x25519", "use-chacha20poly1305", "use-aes-256-gcm", "use-blake2", "use-sha2"]
-x25519 = ["x25519-dalek", "x25519-dalek/static_secrets", "x25519-dalek/getrandom"]
-use-x25519 = ["x25519", "x25519-dalek/default"]
+default = ["use-x25519", "use-chacha20poly1305", "use-aes-256-gcm", "use-blake2", "use-sha2", "use_getrandom"]
+x25519 = ["x25519-dalek", "x25519-dalek/static_secrets"]
+use-x25519 = ["x25519", "x25519-dalek/precomputed-tables", "x25519-dalek/zeroize"]
 use-chacha20poly1305 = ["chacha20poly1305"]
 use-aes-256-gcm = ["aes-gcm"]
 use-blake2 = ["blake2"]
 use-sha2 = ["sha2"]
+use_getrandom = ["noise-protocol/use_getrandom", "x25519-dalek?/getrandom"]
 
 [dependencies]
 x25519-dalek = { version = "2.0.0-rc.2", optional = true, default-features = false }
-aes-gcm = { version = "0.10.1", optional = true }
+aes-gcm = { version = "0.10.1", features = ["aes"], default-features = false, optional = true }
 chacha20poly1305 = { version = "0.10.1", optional = true }
 blake2 = { version = "0.10.6", optional = true }
 sha2 = { version = "0.10.6", optional = true, default-features = false }
-zeroize = "1"
+zeroize = { version = "1", default-features = false }
 
 [dependencies.noise-protocol]
 path = "../noise-protocol"

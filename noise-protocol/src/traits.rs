@@ -71,6 +71,7 @@ pub trait DH {
     /// Name of this DH function, e.g., “25519”.
     fn name() -> &'static str;
 
+    #[cfg(feature = "use_getrandom")]
     /// Randomly generate a new private key.
     fn genkey() -> Self::Key;
 

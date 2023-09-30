@@ -230,7 +230,14 @@ where
             match *t {
                 Token::E => {
                     if self.e.is_none() {
-                        self.e = Some(D::genkey());
+                        #[cfg(feature = "use_getrandom")]
+                        {
+                            self.e = Some(D::genkey());
+                        }
+                        #[cfg(not(feature = "use_getrandom"))]
+                        {
+                            return Err(Error::need_e());
+                        }
                     }
                     let e_pk = D::pubkey(self.e.as_ref().unwrap());
                     self.symmetric.mix_hash(e_pk.as_slice());
@@ -476,6 +483,8 @@ pub enum ErrorKind {
     DH,
     /// A PSK is needed, but none is available.
     NeedPSK,
+    /// An E is needed, but none is available.
+    NeedE,
     /// Decryption failed.
     Decryption,
     /// The message is too short, and impossible to read.
@@ -492,6 +501,12 @@ impl Error {
     fn need_psk() -> Error {
         Error {
             kind: ErrorKind::NeedPSK,
+        }
+    }
+
+    fn need_e() -> Error {
+        Error {
+            kind: ErrorKind::NeedE,
         }
     }
 
@@ -525,6 +540,7 @@ impl ::std::error::Error for Error {
         match self.kind {
             ErrorKind::DH => "DH error",
             ErrorKind::NeedPSK => "Need PSK",
+            ErrorKind::NeedE => "Need E",
             ErrorKind::Decryption => "Decryption failed",
             ErrorKind::TooShort => "Message is too short",
         }

@@ -32,6 +32,7 @@ impl DH for X25519 {
         "25519"
     }
 
+    #[cfg(feature = "use_getrandom")]
     fn genkey() -> Self::Key {
         Self::Key::from_slice(StaticSecret::random().as_bytes())
     }
