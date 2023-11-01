@@ -11,7 +11,7 @@ keywords = ["noise"]
 categories = ["cryptography"]
 
 [dependencies]
-arrayvec = { version = "0.7.2", default-features = false }
+arrayvec = { version = "0.7.4", default-features = false }
 
 [features]
 default = ["use_std"]

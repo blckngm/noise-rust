@@ -9,7 +9,7 @@ version = "0.2.0-rc.1"
 description = "Ring wrappers for nosie-protocol."
 
 [dependencies]
-ring = "0.16"
+ring = "0.17"
 zeroize = "1"
 
 [dependencies.noise-protocol]
