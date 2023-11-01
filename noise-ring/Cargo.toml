@@ -5,7 +5,7 @@ license = "Unlicense"
 name = "noise-ring"
 readme = "README.md"
 repository = "https://github.com/sopium/noise-rust"
-version = "0.2.0-rc.1"
+version = "0.2.0"
 description = "Ring wrappers for nosie-protocol."
 
 [dependencies]
