@@ -31,7 +31,7 @@ impl HandshakePattern {
     ///
     /// # Pattern validity
     ///
-    /// It is the caller's responlity to ensure that the pattern is *valid*.
+    /// It is the caller's responsibility to ensure that the pattern is *valid*.
     ///
     /// # Panics
     ///
