@@ -44,7 +44,11 @@ impl DH for X25519 {
     fn dh(k: &Self::Key, pk: &Self::Pubkey) -> Result<Self::Output, ()> {
         let k = StaticSecret::from(**k);
         let pk = PublicKey::from(*pk);
-        Ok(Self::Output::from_slice(k.diffie_hellman(&pk).as_bytes()))
+        let shared = k.diffie_hellman(&pk);
+        if !shared.was_contributory() {
+            return Err(());
+        }
+        Ok(Self::Output::from_slice(shared.as_bytes()))
     }
 }
 
